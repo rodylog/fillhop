@@ -1,0 +1,96 @@
+  :root{--bg:#f6f7f9;--card:#fff;--ink:#1a1d21;--muted:#6b7280;--line:#e3e6ea;
+        --bleu:#0b57d0;--marron:#b07d10;--rouge:#c02626;--vert:#158a3f;--vert-2:#0f6e30;
+        --r1:7px;--r2:10px;--r3:20px}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#14171a;--card:#1d2126;--ink:#e9ecef;--muted:#9aa3ad;--line:#2c3238}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       background:var(--bg);color:var(--ink)}
+  header{padding:14px 18px;background:var(--card);border-bottom:1px solid var(--line);
+         display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+  h1{font-size:17px;margin:0;font-weight:650;white-space:nowrap}
+  .ctl{display:flex;gap:6px;align-items:center;font-size:14px}
+  #carbs{gap:2px;flex-wrap:wrap}
+  .case{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+        border:1px solid var(--line);border-radius:var(--r3);cursor:pointer;
+        white-space:nowrap;font-size:13.5px}
+  .case:has(input:checked){background:var(--bleu);border-color:var(--bleu);color:#fff}
+  select,.btn{padding:5px 8px;border:1px solid var(--line);border-radius:var(--r1);
+         background:var(--card);color:var(--ink);font:inherit}
+  .btn{cursor:pointer}
+  .btn:hover{background:rgba(127,127,127,.12)}
+  #maj{color:var(--muted);font-size:13px;margin-left:auto;text-align:right}
+  #map{height:min(64vh,620px);width:100%}
+  .barre{padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line)}
+  .barre form{display:flex;gap:9px;align-items:center;flex-wrap:wrap;font-size:14px}
+  .barre input:not([type=checkbox]){flex:1 1 220px;min-width:170px;padding:6px 9px;border:1px solid var(--line);
+               border-radius:var(--r1);background:var(--bg);color:var(--ink);font:inherit}
+  .fl{color:var(--muted);background:none;border:0;padding:2px 5px;font:inherit;
+      font-size:17px;line-height:1;border-radius:var(--r1);cursor:pointer;
+      transition:transform .18s}
+  .fl:hover{color:var(--ink);background:rgba(127,127,127,.12)}
+  .fl:active{transform:rotate(180deg)}
+  #infoTrajet{color:var(--muted);font-size:13px}
+  .fiche{padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line);
+         display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .fiche[hidden]{display:none}   /* display:flex ecrase l'attribut hidden sinon */
+  #vehOk{background:var(--vert);border-color:var(--vert);color:#fff;font-weight:600}
+  #vehOk:hover{background:var(--vert-2)}
+  #vnom{width:150px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r1);
+        background:var(--bg);color:var(--ink);font:inherit}
+  #conso,#cuve,#reserve{width:62px;padding:5px 7px;border:1px solid var(--line);border-radius:var(--r1);
+               background:var(--bg);color:var(--ink);font:inherit}
+  #plan{font-size:13.5px;margin-top:8px;display:none;line-height:1.7}
+  .badge{background:var(--bleu);color:#fff;border-radius:6px;padding:1px 6px;
+         font-size:11.5px;font-weight:700;white-space:nowrap}
+  tbody tr.etape{background:rgba(11,87,208,.10)}
+  .pill{display:inline-block;padding:2px 7px;border-radius:var(--r3);color:#fff;
+        font-weight:700;font-size:12.5px;white-space:nowrap}
+  .lbl{background:#fff;border:1.5px solid #333;border-radius:var(--r3);padding:1px 6px;
+       font:700 12.5px system-ui;color:#111;white-space:nowrap;text-align:center;
+       box-shadow:0 1px 4px rgba(0,0,0,.28)}
+  .lbl2{border-radius:11px;padding:2px;display:flex;flex-direction:column;gap:2px;
+        border-color:#9aa3ad;line-height:1.25}
+  .lbl2 span{white-space:nowrap;font-size:11.5px;color:#fff;border-radius:8px;
+             padding:1px 5px;text-align:center}
+  .wrap{max-width:1100px;margin:0 auto;padding:18px}
+  table{width:100%;border-collapse:collapse;background:var(--card);
+        border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+  th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--line);font-size:14px}
+  th{background:rgba(127,127,127,.09);font-weight:620;cursor:pointer;user-select:none}
+  tbody tr:hover{background:rgba(127,127,127,.07);cursor:pointer}
+  .legend{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);
+          margin:14px 0 8px;flex-wrap:wrap}
+  .sw{width:22px;height:12px;border-radius:3px;display:inline-block}
+  .note{color:var(--muted);font-size:13px;margin-top:12px;line-height:1.6}
+  a{color:inherit}
+  .leaflet-popup-content{font:14px/1.5 system-ui;margin:11px 13px}
+  .fuels{margin:7px 0 0;padding:0;list-style:none}
+  .fuels li{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;
+            align-items:baseline;border-top:1px dotted #bbb;padding:3px 0}
+  .fuels li.hi b{color:var(--bleu)}
+  .fuels li.hi{font-weight:600}
+  .fuels .dt{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .fuels .dt.vieux{color:var(--rouge)}
+  svg.ico{width:1.1em;height:1.1em;vertical-align:-.15em;flex:none}
+  /* Icone du selecteur de fonds Leaflet : le CSS Leaflet livre pointe vers
+     images/layers.png, absent de la page assemblee (fichier unique, pas de
+     dossier images/) -> 404 et carre blanc vide. Remplacement par un SVG
+     inline (data URI), sans nouvel hote ni fichier externe. */
+  .leaflet-control-layers-toggle,
+  .leaflet-retina .leaflet-control-layers-toggle{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='M22 17.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 18.57a1 1 0 0 1-.6-.92'/%3E%3Cpath d='M22 12.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 13.57a1 1 0 0 1-.6-.92'/%3E%3C/svg%3E") !important;
+    background-size:20px 20px;
+  }
+  @media (pointer:coarse){
+    .btn,.case,.fl,select,.barre input:not([type=checkbox]),#vnom,#conso,#cuve,#reserve,.leaflet-bar a{
+      min-height:44px;min-width:44px
+    }
+    .leaflet-bar a{line-height:44px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition:none !important;animation:none !important}
+    .fl:active{transform:none}
+  }
+  :focus-visible{outline:2px solid var(--bleu);outline-offset:2px}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+__CSP__
+<title>FuelPilot</title>
+<style>__LEAFLET_CSS__</style>
+<script>__LEAFLET_JS__</script>
+<style>
+__APP_CSS__
+</style>
+</head>
+<body>
+<header>
+  <h1><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg> FuelPilot<span id="lieu"></span></h1>
+  <label class="ctl"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg> <select id="veh"></select></label>
+  <button class="ctl btn" id="vehPlus" type="button" title="Ajouter un véhicule" aria-label="Ajouter un véhicule"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  <button class="ctl btn" id="vehNom" type="button" title="Ouvrir la fiche du véhicule" aria-label="Ouvrir la fiche du véhicule"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>
+  <label class="case" id="filtreCher"><input type="checkbox" id="sansCher" checked> Masquer les trop chères</label>
+  <button class="ctl btn" id="maposition" type="button"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><circle cx="12" cy="12" r="7"/></svg> Ma position</button>
+  <button class="ctl btn" id="repere" type="button"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z"/></svg> Point de repère</button>
+  <div id="maj">chargement…</div>
+</header>
+
+<div id="fiche" class="fiche" hidden>
+  <label class="ctl">Nom <input id="vnom" placeholder="Ma voiture"></label>
+  <span class="ctl" id="carbs"></span>
+  <label class="ctl">Conso
+    <input id="conso" type="number" step="0.1" min="3" max="25" placeholder="6,5"> L/100</label>
+  <label class="ctl">Réservoir
+    <input id="cuve" type="number" step="1" min="10" max="150" placeholder="50"> L</label>
+  <label class="ctl">Réserve
+    <input id="reserve" type="number" step="5" min="0" max="200" placeholder="30"> km</label>
+  <button class="btn" id="vehOk" type="button"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Enregistrer</button>
+  <button class="btn" id="vehMoins" type="button" title="Supprimer ce véhicule" aria-label="Supprimer ce véhicule"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+</div>
+
+<div class="barre">
+  <form id="trajet">
+    <input id="depart" placeholder="Départ — vide = ma position" autocomplete="off">
+    <button class="fl" id="inverser" type="button"
+            title="Inverser départ et arrivée (trajet retour)"
+            aria-label="Inverser départ et arrivée"><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></button>
+    <input id="arrivee" placeholder="Arrivée — adresse, ville…" autocomplete="off">
+    <label class="ctl">Couloir
+      <select id="couloir">
+        <option value="1">1 km</option>
+        <option value="2">2 km</option>
+        <option value="5">5 km</option>
+        <option value="10" selected>10 km</option>
+        <option value="20">20 km</option>
+      </select>
+    </label>
+    <label class="case"><input type="checkbox" id="queUtiles" checked> Ne garder que les arrêts du plan</label>
+    <label class="case"><input type="checkbox" id="sansPeage"> Sans péage</label>
+    <button class="btn" type="submit">Stations sur le trajet</button>
+    <button class="btn" id="effacer" type="button" hidden><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Effacer</button>
+    <span id="infoTrajet"></span>
+  </form>
+  <div id="plan"></div>
+</div>
+
+<div id="map"></div>
+
+<div class="wrap">
+  <div class="legend">
+    <span class="sw" style="background:var(--bleu)"></span> le moins cher
+    <span class="sw" style="background:var(--marron)"></span> dans la norme
+    <span class="sw" style="background:var(--rouge)"></span> cher
+    <span id="echelle"></span>
+    <span style="margin-left:auto" id="compte"></span>
+  </div>
+  <table>
+    <thead><tr>
+      <th data-k="prix">Prix ▲</th><th data-k="dist" id="thDist">Distance</th>
+      <th data-k="ville">Commune</th><th data-k="adresse">Adresse</th>
+      <th data-k="maj">Relevé</th>
+    </tr></thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <p class="note">
+    Source : <a href="https://data.economie.gouv.fr/explore/dataset/prix-des-carburants-en-france-flux-instantane-v2/"
+    target="_blank" rel="noopener">flux instantané officiel du ministère de l'Économie</a>
+    — mêmes données que
+    <a href="https://www.prix-carburants.gouv.fr" target="_blank" rel="noopener">prix-carburants.gouv.fr</a>,
+    rechargées à chaque ouverture de cette page.
+    <b>Les stations suivent la carte</b> : chaque déplacement ou dézoom recharge
+    celles de la zone visible (400 au maximum ; au-delà, le compteur le signale).
+    Les distances partent du <b>point de repère</b> (pastille bleue) : votre position
+    si vous autorisez la géolocalisation, sinon le dernier repère mémorisé sur cet
+    appareil — <b>clic droit sur la carte</b> pour le poser où vous voulez.
+    « SP le moins cher » retient, station par station, le meilleur du E10 / SP95 / SP98.
+    <b>Itinéraire</b> : saisissez une arrivée pour ne garder que les stations situées
+    dans le couloir choisi autour du trajet (10 km par défaut ; tracé IGN, adresses
+    géocodées sur la Base Adresse Nationale) ; zoomer sur un tronçon affine la liste
+    à ce tronçon, le couloir bornant lui le détour acceptable.
+    La flèche <b><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></b> entre les deux champs échange départ et arrivée : le trajet
+    <b>retour</b> en un clic, recalculé aussitôt si un tracé est affiché.
+    Avec la conso et le réservoir renseignés, la page propose <b>où faire le plein</b> :
+    plein au départ, arrêts choisis au moins cher dans le couloir, réserve de 10 %.
+    Les stations <b>en rupture</b> du carburant demandé sont écartées : le flux conserve
+    leur dernier prix, mais le carburant n'y est pas disponible.
+    « Masquer les trop chères » retire de la carte <i>et</i> du tableau les stations
+    au-dessus du 9<sup>e</sup> décile du secteur — un seuil en percentile plutôt qu'en
+    centimes, pour qu'il ne vieillisse pas quand les prix dérivent. Décochable.
+    « Mes 2 pleins » ne garde que les stations servant à la fois l'E85 et un SP,
+    classées sur la somme des deux prix ; chaque carburant y est <b>coloré sur sa
+    propre échelle</b>, si bien qu'une ligne bleue au-dessus d'une ligne orange
+    signale un bon E85 avec un SP quelconque. Clic sur une ligne ou un repère : itinéraire.
+  </p>
+</div>
+
+<script>
+__APP_JS__
+</script>
+</body>
+</html>

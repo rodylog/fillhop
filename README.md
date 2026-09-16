@@ -41,6 +41,25 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
 Le fichier généré est autonome (Leaflet embarqué, empreintes SHA-384 vérifiées) ;
 seul le chargement des prix, des tuiles et du géocodage passe par le réseau.
 
+## Développement
+
+Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
+
+| Fichier | Rôle |
+|---|---|
+| `src/index.html` | structure de la page (`__APP_CSS__`, `__APP_JS__` = points d'insertion) |
+| `src/app.css` | styles ; jetons dans `:root` (couleurs métier, rayons) |
+| `src/plan.js` | algorithme du plan de pleins, pur, exporté pour Node |
+| `src/app.js` | carte, données, interface |
+| `src/plan.test.js` | tests de l'algorithme |
+
+```bash
+node --test src/plan.test.js   # tests de l'algorithme (Node ≥ 20)
+```
+
+La CSP est recalculée à chaque génération à partir des scripts réellement inline ;
+un nouvel hôte réseau doit être ajouté à `connect-src` / `img-src` dans `csp_meta()`.
+
 ## Sources et licences
 
 - Prix : [data.economie.gouv.fr](https://data.economie.gouv.fr/explore/dataset/prix-des-carburants-en-france-flux-instantane-v2/) (Licence Ouverte).
