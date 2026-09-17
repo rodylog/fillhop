@@ -839,6 +839,59 @@ function distTrace(la, lo){
   return {d: best, km};
 }
 
+// ---------- Trajets memorises ----------
+// Demande Eric, 17/09/2026 : rappeler un trajet frequent en un clic. Cle dediee,
+// relue fraiche avant chaque ecriture : plusieurs onglets partagent ce stockage
+// (meme precaution que pour le garage). Un depart vide vaut « ma position ».
+const CLE_TRAJETS = 'fuelpilot:trajets';
+const trajetsLus = () => {
+  try{ const t = JSON.parse(localStorage.getItem(CLE_TRAJETS)); return Array.isArray(t) ? t : []; }
+  catch(e){ return []; }
+};
+const trajetCourant = () => ({dep: document.getElementById('depart').value.trim(),
+                              arr: document.getElementById('arrivee').value.trim(),
+                              sansPeage: document.getElementById('sansPeage').checked});
+const memeTrajet = (x, y) => String(x.dep).toLowerCase() === String(y.dep).toLowerCase() &&
+  String(x.arr).toLowerCase() === String(y.arr).toLowerCase() && !!x.sansPeage === !!y.sansPeage;
+const nomTrajet = t => `${t.dep || 'Ma position'} → ${t.arr}${t.sansPeage ? ' (sans péage)' : ''}`;
+function majTrajets(){
+  const liste = trajetsLus();
+  const sel = document.getElementById('trajetsMemo');
+  // Options construites en DOM (texte, jamais HTML) : les noms viennent de la saisie.
+  sel.replaceChildren(new Option('Trajets mémorisés…', ''),
+    ...liste.map((t,i) => new Option(nomTrajet(t), String(i))));
+  sel.hidden = !liste.length;
+  const b = document.getElementById('memoriser'), c = trajetCourant();
+  const deja = !!(ROUTE && c.arr && liste.some(t => memeTrajet(t, c)));
+  b.hidden = !(ROUTE && c.arr);
+  b.setAttribute('aria-pressed', String(deja));
+  b.textContent = deja ? '★ Mémorisé' : '☆ Mémoriser';
+  b.title = deja ? 'Retirer ce trajet des trajets mémorisés' : 'Mémoriser ce trajet';
+}
+document.getElementById('memoriser').onclick = () => {
+  const c = trajetCourant();
+  if(!c.arr) return;
+  let liste = trajetsLus();
+  const i = liste.findIndex(t => memeTrajet(t, c));
+  if(i >= 0) liste.splice(i, 1); else liste = [c, ...liste].slice(0, 20);
+  try{ localStorage.setItem(CLE_TRAJETS, JSON.stringify(liste)); }
+  catch(e){ /* stockage refuse : rien a memoriser */ }
+  majTrajets();
+};
+document.getElementById('trajetsMemo').onchange = e => {
+  const t = trajetsLus()[+e.target.value];
+  e.target.value = '';
+  if(!t) return;
+  document.getElementById('depart').value = t.dep || '';
+  document.getElementById('arrivee').value = t.arr || '';
+  document.getElementById('sansPeage').checked = !!t.sansPeage;
+  document.getElementById('trajet').requestSubmit();
+};
+['depart', 'arrivee'].forEach(id => document.getElementById(id).addEventListener('input', majTrajets));
+document.getElementById('sansPeage').addEventListener('change', majTrajets);
+window.addEventListener('storage', e => { if(e.key === CLE_TRAJETS) majTrajets(); });
+majTrajets();
+
 async function calculerTrajet(ev){
   ev.preventDefault();
   infoT.textContent = 'calcul…';
@@ -870,6 +923,7 @@ async function calculerTrajet(ev){
     infoT.textContent = `${(j.distance/1000).toFixed(0)} km · ${Math.round(j.duration/60)} min`+
       `${sansP ? ' · sans autoroute' : ''} · ${a.label} → ${b.label}`;
     document.getElementById('effacer').hidden = false;
+    majTrajets();
     charger();
   }catch(e){
     infoT.textContent = e.message;
@@ -889,6 +943,7 @@ document.getElementById('effacer').onclick = () => {
   ROUTE = null; KMS = null;
   if(traceLigne){ map.removeLayer(traceLigne); traceLigne = null; }
   document.getElementById('effacer').hidden = true;
+  majTrajets();
   infoT.textContent = '';
   situer(CENTRE[0], CENTRE[1], repere.getTooltip().getContent().split(' —')[0]);
 };

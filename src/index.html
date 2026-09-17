@@ -39,6 +39,7 @@ __APP_CSS__
 
 <div class="barre">
   <form id="trajet">
+    <select id="trajetsMemo" aria-label="Trajets mémorisés" hidden></select>
     <input id="depart" placeholder="Départ — vide = ma position" autocomplete="off">
     <button class="fl" id="inverser" type="button"
             title="Inverser départ et arrivée (trajet retour)"
@@ -57,6 +58,7 @@ __APP_CSS__
     <label class="case"><input type="checkbox" id="sansPeage"> Sans péage</label>
     <button class="btn" type="submit">Stations sur le trajet</button>
     <button class="btn" id="effacer" type="button" hidden><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Effacer</button>
+    <button class="btn" id="memoriser" type="button" hidden aria-pressed="false">☆ Mémoriser</button>
     <span id="infoTrajet"></span>
   </form>
   <div id="plan"></div>
