@@ -87,7 +87,8 @@ def leaflet_inline(name, sri):
 
 def csp_meta(html):
     """CSP calculee sur le HTML final : script-src par empreinte des deux scripts
-    inline (pas de 'unsafe-inline'), connect-src borne aux trois API publiques.
+    inline (pas de 'unsafe-inline'), connect-src borne aux trois API publiques et a
+    la page elle-meme ('self' : controle de version).
     Une chaine tierce (flux des stations, URL #veh=) qui reussirait malgre
     l'echappement a injecter un <script> ne s'executerait pas, et ne pourrait
     rien exfiltrer ailleurs que vers ces hotes."""
@@ -99,7 +100,7 @@ def csp_meta(html):
             "default-src 'none'; script-src " + " ".join(hashes) + "; "
             "style-src 'unsafe-inline'; "
             "img-src 'self' data: https://data.geopf.fr https://*.basemaps.cartocdn.com; "
-            "connect-src https://data.economie.gouv.fr https://data.geopf.fr "
+            "connect-src 'self' https://data.economie.gouv.fr https://data.geopf.fr "
             "https://api-adresse.data.gouv.fr; "
             "base-uri 'none'; form-action 'self'\">")
 
@@ -147,6 +148,7 @@ def main():
                        ("__NOM__", a.nom), ("__RAYON__", str(a.rayon)),
                        ("__SELECT__", SELECT), ("__API__", API),
                        ("__SNAPDATE__", datetime.now().strftime("%d/%m/%Y %H:%M")),
+                       ("__BUILD__", datetime.now().strftime("%Y%m%d-%H%M%S")),
                        ("__SNAP__", json.dumps(rows, ensure_ascii=False))):
         html = html.replace(token, val)
     html = html.replace("__CSP__", csp_meta(html))   # en dernier : empreintes du HTML final

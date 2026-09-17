@@ -333,14 +333,16 @@ function rendu(){
   const retenues = sansCher ? list.filter(o => !chere(o)) : list;
   const ecartees = list.length - retenues.length;
 
+  // Dessin des pastilles, appele une fois connue la liste REELLEMENT affichee (voir
+  // plus bas) : mn = prix minimum par carburant parmi ces seules stations.
   // Les plus cheres dessinees en premier : les etiquettes utiles restent dessus.
-  [...retenues].sort((a,b) => b.v.p - a.v.p).forEach((o,i) => {
+  const dessinerMarqueurs = (liste, mn) => [...liste].sort((a,b) => b.v.p - a.v.p).forEach((o,i) => {
     const {s,v} = o;
     const chips = v.lignes.map((l,j) =>
-      `<span style="background:${couleur(l.prix, refs[j], minis[j])}">${l.tag} ${l.prix.toFixed(3)}</span>`).join('');
+      `<span style="background:${couleur(l.prix, refs[j], mn[j])}">${l.tag} ${l.prix.toFixed(3)}</span>`).join('');
     const html = multi
       ? `<div class="lbl lbl2">${chips}</div>`
-      : `<div class="lbl" style="background:${couleur(v.lignes[0].prix, refs[0], minis[0])};`+
+      : `<div class="lbl" style="background:${couleur(v.lignes[0].prix, refs[0], mn[0])};`+
         `border-color:#555;color:#fff">${v.lignes[0].prix.toFixed(3)}`+
         (sel[0]==='spmin' ? ` <span style="font-size:10px;opacity:.85">${v.lignes[0].tag}</span>` : '')+
         `</div>`;
@@ -388,7 +390,9 @@ function rendu(){
   // vaut une station chere qu'une panne seche), la moins chere ; a prix egal,
   // la plus lointaine. Glouton simple, suffisant a cette echelle.
   const etapeNum = new Map();
-  let utilesPlan = null;
+  // Trajet sans arret necessaire : stations gardees a la place du plan (voir plus bas).
+  const moinsCheres = new Set();
+  let utilesPlan = null, horsPlan = 0;
   const elPlan = document.getElementById('plan');
   if(ROUTE && KMS){
     const conso = +document.getElementById('conso').value;
@@ -444,6 +448,18 @@ function rendu(){
       const retour = finTrajet.length ? finTrajet.reduce((x,y) => y.p < x.p ? y : x) : null;
 
       (plan || []).forEach((e,i) => etapeNum.set(e.s, i + 1));
+      // Trajet court, aucun arret necessaire : le filtre « arrets du plan » ne doit pas
+      // vider la carte. On garde alors les moins cheres du couloir DANS LA ZONE AFFICHEE
+      // (meme reference que le bleu : sinon le texte citait des stations hors ecran) :
+      // TOUTES celles au prix le plus bas, ex aequo compris, donc toutes en bleu,
+      // completees jusqu'a trois stations, departagees par le detour. Constate le
+      // 17/09/2026 : Montpellier > Aniane, 35 km, 10 stations dans le couloir, carte et
+      // tableau vides.
+      if(plan && !plan.length && list.length){
+        const parPrix = [...list].sort((a,b) => a.v.p - b.v.p || a.s.ecart - b.s.ecart);
+        const pMin = parPrix[0].v.p;
+        parPrix.forEach((o,i) => { if(o.v.p <= pMin + 1e-9 || i < 3) moinsCheres.add(o.s); });
+      }
       (plan || []).forEach((e,i) => {
         L.circleMarker([e.s.la, e.s.lo], {radius: 17, color: '#0b57d0', weight: 3,
           fill: false, dashArray: '5 5'}).addTo(etapeLayer)
@@ -455,8 +471,13 @@ function rendu(){
         elPlan.innerHTML = `${tete} · <b style="color:#c02626">${ICO.alerte} trajet infaisable avec cette`+
           ` autonomie dans ce couloir</b> — élargis le couloir, réduis la réserve ou vérifie conso et réservoir`;
       }else if(!plan.length){
+        const lst = [...list].filter(o => moinsCheres.has(o.s))
+                             .sort((a,b) => a.v.p - b.v.p || a.s.ecart - b.s.ecart);
         elPlan.innerHTML = `${tete} · trajet de ${Math.round(total)} km : <b>aucun arrêt nécessaire</b>`+
-          (voyage != null ? ` · carburant du voyage ≈ <b>${voyage.toFixed(2)} €</b> (plein au départ)` : '');
+          (voyage != null ? ` · carburant du voyage ≈ <b>${voyage.toFixed(2)} €</b> (plein au départ)` : '') +
+          (lst.length ? `<br>Pour un plein en route, les moins chères du couloir dans la zone affichée : ` +
+            lst.map(o => `<b>${o.s.ville}</b> ${o.v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)}`).join(' + ')} €`+
+                         ` (km ${Math.round(o.s.kmr)}, détour ${(2*o.s.ecart).toFixed(1)} km)`).join(' · ') : '');
       }else{
         elPlan.innerHTML = tete +
           ` · plan optimal sur ${COURT[carbPlan] || 'SP'}, détours comptés — achats en route ≈ <b>${coutTotal.toFixed(2)} €</b>` +
@@ -473,34 +494,45 @@ function rendu(){
       }
     }
     if(utilesPlan && document.getElementById('queUtiles').checked){
-      const aVirer = [];
-      layer.eachLayer(m => { const st = m.options.stationRef;
-        if(st && !etapeNum.has(st)) aVirer.push(m); });
-      aVirer.forEach(m => layer.removeLayer(m));
       const avant = tri.length;
-      tri = tri.filter(({s}) => etapeNum.has(s));
+      tri = tri.filter(({s}) => etapeNum.has(s) || moinsCheres.has(s));
       const off = avant - tri.length;
+      horsPlan = off;
       if(off) majCompte(` · ${off} hors plan masquée${off>1?'s':''}`);
     }
   }
   if(!tri.length){
-    tb.innerHTML='<tr><td colspan="5">Toutes les stations de la zone sont dans les 10 % les plus chères du secteur — décoche « Masquer les trop chères » pour les voir.</td></tr>';
+    // Deux causes possibles, deux messages : le filtre du plan, ou le masque des cheres.
+    tb.innerHTML = horsPlan
+      ? '<tr><td colspan="5">Aucune station du plan dans la zone affichée — dézoome, ou décoche « Ne garder que les arrêts du plan » pour voir tout le couloir.</td></tr>'
+      : '<tr><td colspan="5">Toutes les stations de la zone sont dans les 10 % les plus chères du secteur — décoche « Masquer les trop chères » pour les voir.</td></tr>';
     return;
   }
+  // Couleurs calculees sur les stations REELLEMENT affichees, comme le dit la legende
+  // (« le moins cher affiché ») : avec le filtre « arrets du plan », une etape seule
+  // restait marron parce que des stations masquees etaient moins cheres ; ex aequo
+  // compris, toutes les moins cheres affichees sont bleues (constate le 17/09/2026).
+  const minisAff = sel.map((k,i) => Math.min(...tri.map(o => o.v.lignes[i].prix)));
+  const miniTotAff = Math.min(...tri.map(o => o.v.p));
+  document.getElementById('echelle').textContent =
+    `— bleu = le moins cher affiché, ex æquo compris ; ${sansCherLbl()} · ` +
+    sel.map((k,i) => `${k==='spmin'?'SP':COURT[k]} ${minisAff[i].toFixed(3)}` +
+                     (refs[i] ? ` / ${refs[i].p90.toFixed(3)}` : '')).join(' · ') + ' €';
+  dessinerMarqueurs(tri, minisAff);
   tri.forEach(({s,v})=>{
     const chips = v.lignes.map((l,j) =>
-      `<span class="pill" style="background:${couleur(l.prix, refs[j], minis[j])}">${l.tag} ${l.prix.toFixed(3)}</span>`).join(' ');
+      `<span class="pill" style="background:${couleur(l.prix, refs[j], minisAff[j])}">${l.tag} ${l.prix.toFixed(3)}</span>`).join(' ');
     const prix = multi
-      ? `<span class="pill" style="background:${couleur(v.p, refTotal, miniTot)}">${v.p.toFixed(3)} €</span>`+
+      ? `<span class="pill" style="background:${couleur(v.p, refTotal, miniTotAff)}">${v.p.toFixed(3)} €</span>`+
         `<div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${chips}</div>`
       : chips;
-    const et = etapeNum.get(s);
+    const et = etapeNum.get(s), mc = moinsCheres.has(s);
     const tr=document.createElement('tr');
-    if(et) tr.className = 'etape';
+    if(et || mc) tr.className = 'etape';
     tr.innerHTML = `<td>${prix}</td>`+
       `<td>${(ROUTE ? s.ecart : s.d).toFixed(1)} km`+
       (ROUTE && s.kmr != null ? `<br><span style="color:var(--muted);font-size:12px">km ${Math.round(s.kmr)}</span>` : '')+`</td>`+
-      `<td>${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
+      `<td>${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : mc ? `<span class="badge">Moins chère</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
       `<td>${s.adresse}${s.auto?' <span style="color:var(--muted)">· 24/24</span>':''}</td>`+
       `<td>${jour(v.maj)}</td>`;
     tr.onclick = ()=>{ map.setView([s.la,s.lo],15,{animate:!CALME}); window.open(gmaps(s),'_blank','noopener'); };
@@ -869,3 +901,43 @@ async function chargerReferentiel(){
 chargerReferentiel().then(rendu).catch(() => {});
 charger();          // on affiche tout de suite, sans attendre l'autorisation
 localiser(true);    // puis on recentre sur l'appareil si l'utilisateur accepte
+
+// ---------- Nouvelle version disponible ----------
+// Home Assistant sert /local/ avec un cache navigateur de 31 jours : sans ce controle,
+// une nouvelle version restait invisible jusqu'a un rechargement force (constate le
+// 17/09/2026 dans Chrome). La page relit sa propre adresse en contournant le cache ;
+// si le marqueur de build differe, un bandeau propose de recharger. La relecture met
+// aussi a jour le cache, donc le rechargement recupere bien la nouvelle version.
+// Rien en file:// (fetch refuse) ; nouvelle verification au retour sur l'onglet,
+// au plus toutes les 10 minutes.
+const BUILD = document.querySelector('meta[name="fuelpilot-build"]')?.content || '';
+let derniereVerif = 0;
+async function verifierVersion(){
+  if(!/^https?:$/.test(location.protocol) || !BUILD) return;
+  if(Date.now() - derniereVerif < 600000) return;
+  derniereVerif = Date.now();
+  try{
+    const r = await fetch(location.pathname, {cache: 'no-cache'});
+    if(!r.ok) return;
+    const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+    const enLigne = doc.querySelector('meta[name="fuelpilot-build"]')?.content;
+    if(enLigne && enLigne !== BUILD) montrerNouvelleVersion();
+  }catch(e){ /* hors ligne : on reessaiera au prochain retour sur l'onglet */ }
+}
+function montrerNouvelleVersion(){
+  if(document.getElementById('majDispo')) return;
+  const d = document.createElement('div');
+  d.id = 'majDispo'; d.className = 'maj-dispo'; d.setAttribute('role', 'status');
+  const t = document.createElement('span');
+  t.textContent = 'Nouvelle version de FuelPilot disponible';
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'btn'; b.textContent = 'Recharger';
+  b.onclick = () => location.reload();
+  const x = document.createElement('button');
+  x.type = 'button'; x.className = 'btn'; x.textContent = 'Plus tard';
+  x.onclick = () => d.remove();
+  d.append(t, b, x);
+  document.body.appendChild(d);
+}
+verifierVersion();
+document.addEventListener('visibilitychange', () => { if(!document.hidden) verifierVersion(); });
