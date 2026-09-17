@@ -24,7 +24,8 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   (scripts autorisés par empreinte SHA-256, pas d'`unsafe-inline`, `connect-src`
   borné aux trois API publiques). Rien ne s'exécute côté serveur : un fichier
   statique servi en https suffit.
-- **Lisibilité** : bleu = le moins cher affiché (ex æquo compris), rouge = les
+- **Lisibilité** : vert = le moins cher affiché (ex æquo compris), bleu = dans la
+  norme, noir = repères du plan (étapes, départ, arrivée), rouge = les
   10 % les plus chers du secteur, stations en **rupture** écartées, dates de
   relevé dans chaque bulle (rouge au-delà de 4 jours).
 - **Position** : géolocalisation de l'appareil (contexte sécurisé requis —

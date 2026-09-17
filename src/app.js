@@ -176,29 +176,27 @@ const dist = (la,lo) => {
   const a=Math.sin(dLa/2)**2+Math.cos(CENTRE[0]*p)*Math.cos(la*p)*Math.sin(dLo/2)**2;
   return 2*R*Math.asin(Math.sqrt(a));
 };
-// Trois couleurs seulement — bleu, noir, rouge. Un degrade continu fabriquait des
-// bleu-vert qu'on ne distinguait pas du bleu franc sur le fond IGN (beige, vert,
-// orange) ; trois teintes tranchees se lisent d'un coup d'oeil.
-// Marron plutot que noir pour le gros du peloton : choix de lisibilite, plus
-// lisible sur le Plan IGN que le noir, qui ecrasait la carte.
-// Couleurs lues depuis les jetons app.css (--bleu/--marron/--rouge) : source
+// Trois couleurs tranchees, lues d'un coup d'oeil : VERT = le moins cher, BLEU = dans
+// la norme, ROUGE = cher (choix Eric, 17/09/2026 ; avant : bleu / marron / rouge).
+// La couleur ne dit QUE le prix : les reperes du plan (etapes, depart, arrivee) sont
+// en noir, pour qu'un cercle vert ne se lise pas « moins cher ».
+// Couleurs lues depuis les jetons app.css (--vert/--bleu/--rouge) : source
 // unique de la palette. Repli sur les valeurs en dur si le jeton est absent
 // (feuille non chargee, style calcule vide).
 const jeton = (nom, repli) =>
   getComputedStyle(document.documentElement).getPropertyValue(nom).trim() || repli;
-const BLEU = jeton('--bleu', '#0b57d0'), MARRON = jeton('--marron', '#b07d10'),
+const VERT = jeton('--vert', '#158a3f'), BLEU = jeton('--bleu', '#0b57d0'),
       ROUGE = jeton('--rouge', '#c02626');
 function couleur(p, b, mini){
-  if(mini != null && p <= mini + 1e-9) return BLEU;    // le moins cher, ex aequo compris
+  if(mini != null && p <= mini + 1e-9) return VERT;    // le moins cher, ex aequo compris
   if(b && p > b.p90) return ROUGE;                     // 10 % les plus chers du secteur
-  return MARRON;
+  return BLEU;                                         // dans la norme
 }
 
 // Referentiel de couleur : les bornes viennent du SECTEUR (60 km autour du
 // point de repere), pas de la zone affichee. Sans cela, la moins chere d'un ecran de
-// stations cheres s'afficherait en bleu — « la moins chere ici » n'est pas
-// « une bonne affaire ». Bleu plein = sous le 1er decile, rouge plein = au-dessus
-// du 9e decile.
+// stations cheres s'afficherait en vert — « la moins chere ici » n'est pas
+// « une bonne affaire ». Rouge plein = au-dessus du 9e decile.
 let REF_ROWS = [];
 function bornes(vue){
   const px = REF_ROWS.map(s => pick(s, vue)).filter(Boolean)
@@ -326,7 +324,7 @@ function rendu(){
   const multi = sel.length > 1;
 
   document.getElementById('echelle').textContent =
-    `— bleu = le moins cher affiché, ex æquo compris ; ${sansCherLbl()} · ` +
+    `— vert = le moins cher affiché, ex æquo compris ; ${sansCherLbl()} · ` +
     sel.map((k,i) => `${k==='spmin'?'SP':COURT[k]} ${minis[i].toFixed(3)}` +
                      (refs[i] ? ` / ${refs[i].p90.toFixed(3)}` : '')).join(' · ') + ' €';
 
@@ -462,8 +460,8 @@ function rendu(){
       (plan || []).forEach((e,i) => etapeNum.set(e.s, i + 1));
       // Trajet court, aucun arret necessaire : le filtre « arrets du plan » ne doit pas
       // vider la carte. On garde alors les moins cheres du couloir DANS LA ZONE AFFICHEE
-      // (meme reference que le bleu : sinon le texte citait des stations hors ecran) :
-      // TOUTES celles au prix le plus bas, ex aequo compris, donc toutes en bleu,
+      // (meme reference que le vert : sinon le texte citait des stations hors ecran) :
+      // TOUTES celles au prix le plus bas, ex aequo compris, donc toutes en vert,
       // completees jusqu'a trois stations, departagees par le detour. Constate le
       // 17/09/2026 : Montpellier > Aniane, 35 km, 10 stations dans le couloir, carte et
       // tableau vides.
@@ -473,19 +471,20 @@ function rendu(){
         parPrix.forEach((o,i) => { if(o.v.p <= pMin + 1e-9 || i < 3) moinsCheres.add(o.s); });
       }
       (plan || []).forEach((e,i) => {
-        L.circleMarker([e.s.la, e.s.lo], {radius: 17, color: '#0b57d0', weight: 3,
+        L.circleMarker([e.s.la, e.s.lo], {radius: 17, color: '#111827', weight: 3,
           fill: false, dashArray: '5 5'}).addTo(etapeLayer)
           .bindTooltip(`Étape ${i+1} — km ${Math.round(e.km)}`);
       });
-      [[depart, '#158a3f', 'Plein au départ'], [arrivee, '#111827', 'Plein à l\'arrivée']].forEach(([o, c, t]) => {
-        if(o) L.circleMarker([o.s.la, o.s.lo], {radius: 17, color: c, weight: 3, fill: false})
+      // Depart et arrivee : cercle noir plein (etapes : pointille) — le noir = le plan.
+      [[depart, 'Plein au départ'], [arrivee, 'Plein à l\'arrivée']].forEach(([o, t]) => {
+        if(o) L.circleMarker([o.s.la, o.s.lo], {radius: 17, color: '#111827', weight: 3, fill: false})
                .addTo(etapeLayer).bindTooltip(`${t} — km ${Math.round(o.km)}`);
       });
       const nomStation = o => `<b>${o.s.ville}</b> ${o.v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)}`).join(' + ')} €`+
                               ` (km ${Math.round(o.km)}, détour ${(2*o.e).toFixed(1)} km)`;
-      const ligneDepart = `<span class="badge badge-dep">${ICO.pompe} Départ</span> Plein au départ : ` +
+      const ligneDepart = `<span class="badge">${ICO.pompe} Départ</span> Plein au départ : ` +
         (depart ? nomStation(depart) : 'aucune station à moins de 15 km du départ dans ce couloir');
-      const ligneArrivee = `<span class="badge badge-arr">${ICO.pompe} Arrivée</span> Plein à l'arrivée : ` +
+      const ligneArrivee = `<span class="badge">${ICO.pompe} Arrivée</span> Plein à l'arrivée : ` +
         (arrivee ? nomStation(arrivee) : 'aucune station à moins de 15 km de l\'arrivée dans ce couloir');
       const tete = `${ligneDepart} · autonomie utile ~${Math.round(A)} km`+
                    ` (${cuve} L × ${String(conso).replace('.', ',')} L/100, réserve ${resv} km)`;
@@ -538,12 +537,12 @@ function rendu(){
   }
   // Couleurs calculees sur les stations REELLEMENT affichees, comme le dit la legende
   // (« le moins cher affiché ») : avec le filtre « arrets du plan », une etape seule
-  // restait marron parce que des stations masquees etaient moins cheres ; ex aequo
-  // compris, toutes les moins cheres affichees sont bleues (constate le 17/09/2026).
+  // restait « dans la norme » parce que des stations masquees etaient moins cheres ;
+  // ex aequo compris, toutes les moins cheres affichees sont vertes (17/09/2026).
   const minisAff = sel.map((k,i) => Math.min(...tri.map(o => o.v.lignes[i].prix)));
   const miniTotAff = Math.min(...tri.map(o => o.v.p));
   document.getElementById('echelle').textContent =
-    `— bleu = le moins cher affiché, ex æquo compris ; ${sansCherLbl()} · ` +
+    `— vert = le moins cher affiché, ex æquo compris ; ${sansCherLbl()} · ` +
     sel.map((k,i) => `${k==='spmin'?'SP':COURT[k]} ${minisAff[i].toFixed(3)}` +
                      (refs[i] ? ` / ${refs[i].p90.toFixed(3)}` : '')).join(' · ') + ' €';
   dessinerMarqueurs(tri, minisAff);
@@ -560,8 +559,8 @@ function rendu(){
     tr.innerHTML = `<td>${prix}</td>`+
       `<td>${(ROUTE ? s.ecart : s.d).toFixed(1)} km`+
       (ROUTE && s.kmr != null ? `<br><span style="color:var(--muted);font-size:12px">km ${Math.round(s.kmr)}</span>` : '')+`</td>`+
-      `<td>${ex ? `<span class="badge ${ex === 'Arrivée' ? 'badge-arr' : 'badge-dep'}">${ICO.pompe} ${ex}</span><br>` : ''}`+
-      `${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : mc ? `<span class="badge">Moins chère</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
+      `<td>${ex ? `<span class="badge">${ICO.pompe} ${ex}</span><br>` : ''}`+
+      `${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : mc ? `<span class="badge badge-min">Moins chère</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
       `<td>${s.adresse}${s.auto?' <span style="color:var(--muted)">· 24/24</span>':''}</td>`+
       `<td>${jour(v.maj)}</td>`;
     tr.onclick = ()=>{ map.setView([s.la,s.lo],15,{animate:!CALME}); window.open(gmaps(s),'_blank','noopener'); };
