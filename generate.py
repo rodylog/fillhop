@@ -99,7 +99,7 @@ def csp_meta(html):
     return ('<meta http-equiv="Content-Security-Policy" content="'
             "default-src 'none'; script-src " + " ".join(hashes) + "; "
             "style-src 'unsafe-inline'; "
-            "img-src 'self' data: https://data.geopf.fr https://*.basemaps.cartocdn.com; "
+            "img-src 'self' data: https://data.geopf.fr https://tile.openstreetmap.org; "
             "connect-src 'self' https://data.economie.gouv.fr https://data.geopf.fr "
             "https://api-adresse.data.gouv.fr; "
             "base-uri 'none'; form-action 'self'\">")

@@ -102,9 +102,6 @@ const FONDS = {
     '&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM'+
     '&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
     {maxZoom:19, attribution:'Plan IGN © IGN — Géoplateforme'}),
-  "Carto (clair)": L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-    {maxZoom:19, attribution:'© OpenStreetMap, © CARTO'}),
   "Vue aérienne": L.tileLayer(
     'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile'+
     '&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM'+
@@ -148,13 +145,22 @@ const CtrlLoc = L.Control.extend({
 });
 map.addControl(new CtrlLoc());
 
-// Repli automatique si l'IGN devient indisponible.
-let secours = false;
+// Repli automatique si l'IGN est vraiment indisponible. Avant le 17/09/2026, UNE tuile
+// en erreur (reseau mobile, zoom rapide) basculait definitivement sur CARTO, qui exige
+// desormais une cle : « API KEY REQUIRED » en travers de toute la carte. Desormais :
+// bascule seulement apres 6 erreurs sans aucune tuile IGN chargee, vers OpenStreetMap
+// (sans cle), et seulement en http(s) — en file://, OSM sert « Access blocked ».
+// OSM reste hors du selecteur : sa politique d'usage exclut un usage courant par une appli.
+const OSM = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:19, attribution:'© les contributeurs OpenStreetMap'});
+let secours = false, erreursIGN = 0, tuilesIGN = 0;
+FONDS["Plan IGN"].on('tileload', () => { tuilesIGN++; });
 FONDS["Plan IGN"].on('tileerror', () => {
-  if(secours) return;
+  erreursIGN++;
+  if(secours || tuilesIGN > 0 || erreursIGN < 6 || !/^https?:$/.test(location.protocol)) return;
   secours = true;
   map.removeLayer(FONDS["Plan IGN"]);
-  FONDS["Carto (clair)"].addTo(map);
+  OSM.addTo(map);
 });
 const repere = L.circleMarker(CENTRE,{radius:6,color:'#1d4ed8',weight:2,
   fillColor:'#3b82f6',fillOpacity:.9}).addTo(map)

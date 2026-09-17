@@ -63,7 +63,8 @@ un nouvel hôte réseau doit être ajouté à `connect-src` / `img-src` dans `cs
 ## Sources et licences
 
 - Prix : [data.economie.gouv.fr](https://data.economie.gouv.fr/explore/dataset/prix-des-carburants-en-france-flux-instantane-v2/) (Licence Ouverte).
-- Fonds de carte : Plan IGN / orthophotos (Géoplateforme), Carto (repli).
+- Fonds de carte : Plan IGN / orthophotos (Géoplateforme) ; OpenStreetMap en secours
+  seulement si l'IGN ne répond pas (CARTO retiré le 17/09/2026 : clé désormais exigée).
 - Itinéraires : Géoplateforme IGN. Géocodage : Base Adresse Nationale.
 - [Leaflet](https://leafletjs.com) (BSD-2). Code : MIT.
 
