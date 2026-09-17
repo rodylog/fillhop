@@ -5,7 +5,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {optimiserPlan, pleinsExtremites} = require('./plan.js');
+const {optimiserPlan, pleinsExtremites, autonomieUtile} = require('./plan.js');
 
 // Comparaison avec tolerance : les couts en euros passent par des
 // multiplications flottantes (ex: 1.2*2*53 = 127.19999999999999).
@@ -160,4 +160,25 @@ test('arrivee : la moins chere dans les 15 derniers km', () => {
 
 test('aucune station : depart et arrivee null', () => {
   assert.deepStrictEqual(pleinsExtremites([], 600), {depart: null, arrivee: null});
+});
+
+// ---- autonomieUtile : autonomie d'un plein saisie, ou deduite du reservoir ----
+
+test('autonomie saisie : elle prime sur le reservoir, reserve deduite', () => {
+  // 600 km saisis ; le reservoir (40 L a 7 L/100 = 571 km) est ignore.
+  assert.deepStrictEqual(autonomieUtile(7, 40, 600, 30), {plein: 600, A: 570, source: 'autonomie'});
+});
+
+test('sans autonomie : reservoir / conso x 100', () => {
+  // 40 L a 8 L/100 = 500 km ; reserve 50 -> 450 km utiles.
+  assert.deepStrictEqual(autonomieUtile(8, 40, 0, 50), {plein: 500, A: 450, source: 'reservoir'});
+});
+
+test('ni autonomie ni reservoir exploitable : null', () => {
+  assert.strictEqual(autonomieUtile(7, 0, 0, 30), null);
+  assert.strictEqual(autonomieUtile(0, 40, 0, 30), null);   // reservoir sans conso : rien a deduire
+});
+
+test('autonomie saisie sans conso : l\'autonomie suffit a situer les arrets', () => {
+  assert.deepStrictEqual(autonomieUtile(0, 0, 650, 30), {plein: 650, A: 620, source: 'autonomie'});
 });

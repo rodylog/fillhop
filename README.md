@@ -9,8 +9,11 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   (déclaration obligatoire des stations, mise à jour ~10 min), rechargé à chaque
   ouverture et à chaque déplacement de la carte.
 - **Garage multi-véhicules** : chaque véhicule a sa fiche (carburants, conso,
-  réservoir, réserve en km), mémorisée dans le navigateur. Import/partage d'une
-  fiche par l'URL : `fuelpilot.html#veh=Nom|e85+e10|6.5|50|30`.
+  autonomie d'un plein en km — ou réservoir —, réserve en km), mémorisée dans le
+  navigateur. Aucune source ouverte ne donne la capacité du réservoir (vérifié le
+  17/09/2026) : l'autonomie, que l'on connaît ou que la voiture affiche, prime.
+  Import/partage d'une fiche par l'URL : `fuelpilot.html#veh=Nom|e85+e10|6.5|50|30`
+  (nom|carburants|conso|réservoir|réserve), autonomie en 6ᵉ champ facultatif : `…|30|600`.
 - **Plan de pleins optimal** (problème de la station-service, programmation
   dynamique avant/arrière) : où s'arrêter en partant plein, détours facturés en
   carburant ET en minutes, pénalité par arrêt, coût du voyage complet,

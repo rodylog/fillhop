@@ -29,7 +29,9 @@ __APP_CSS__
   <span class="ctl" id="carbs"></span>
   <label class="ctl">Conso
     <input id="conso" type="number" step="0.1" min="3" max="25" placeholder="6,5"> L/100</label>
-  <label class="ctl">Réservoir
+  <label class="ctl" title="Distance parcourue avec un plein — souvent affichée par la voiture">Autonomie d'un plein
+    <input id="autonomie" type="number" step="10" min="50" max="3000" placeholder="600"> km</label>
+  <label class="ctl" title="Facultatif si l'autonomie est renseignée">ou réservoir
     <input id="cuve" type="number" step="1" min="10" max="150" placeholder="50"> L</label>
   <label class="ctl">Réserve
     <input id="reserve" type="number" step="5" min="0" max="200" placeholder="30"> km</label>
@@ -100,8 +102,9 @@ __APP_CSS__
     à ce tronçon, le couloir bornant lui le détour acceptable.
     La flèche <b><svg class="ico" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg></b> entre les deux champs échange départ et arrivée : le trajet
     <b>retour</b> en un clic, recalculé aussitôt si un tracé est affiché.
-    Avec la conso et le réservoir renseignés, la page propose <b>où faire le plein</b> :
-    plein au départ, arrêts choisis au moins cher dans le couloir, réserve de 10 %.
+    Avec la conso et l'<b>autonomie d'un plein</b> (ou le réservoir) renseignées, la page
+    propose <b>où faire le plein</b> : plein au départ, arrêts choisis au moins cher dans le
+    couloir, plein à l'arrivée, en gardant la réserve choisie (en km).
     Les stations <b>en rupture</b> du carburant demandé sont écartées : le flux conserve
     leur dernier prix, mais le carburant n'y est pas disponible.
     « Masquer les trop chères » retire de la carte <i>et</i> du tableau les stations

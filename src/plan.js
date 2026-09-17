@@ -71,5 +71,15 @@ function pleinsExtremites(cand, total, rayon = 15){
           arrivee: meilleure(cand.filter(c => c.km >= total - rayon))};
 }
 
+// Autonomie utile du plan. Aucune source ouverte ne donne la capacite du reservoir
+// (verifie le 17/09/2026) : on demande donc l'AUTONOMIE D'UN PLEIN en km, chiffre que
+// le conducteur connait ou lit sur son tableau de bord. Si elle est saisie, elle prime ;
+// sinon reservoir / conso x 100. On retire la reserve. null si ni l'une ni l'autre.
+function autonomieUtile(conso, cuve, autonomie, reserve){
+  const plein = autonomie > 0 ? autonomie : (cuve > 0 && conso > 0 ? cuve / conso * 100 : 0);
+  if(!(plein > 0)) return null;
+  return {plein, A: plein - Math.max(0, reserve || 0), source: autonomie > 0 ? 'autonomie' : 'reservoir'};
+}
+
 // Export Node (tests) ; sans effet dans la page, ou `module` n'existe pas.
-if(typeof module !== 'undefined' && module.exports) module.exports = {optimiserPlan, pleinsExtremites};
+if(typeof module !== 'undefined' && module.exports) module.exports = {optimiserPlan, pleinsExtremites, autonomieUtile};

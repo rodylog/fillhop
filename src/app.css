@@ -39,7 +39,7 @@
   #vehOk:hover{background:var(--vert-2)}
   #vnom{width:150px;padding:5px 8px;border:1px solid var(--line);border-radius:var(--r1);
         background:var(--bg);color:var(--ink);font:inherit}
-  #conso,#cuve,#reserve{width:62px;padding:5px 7px;border:1px solid var(--line);border-radius:var(--r1);
+  #conso,#cuve,#reserve,#autonomie{width:62px;padding:5px 7px;border:1px solid var(--line);border-radius:var(--r1);
                background:var(--bg);color:var(--ink);font:inherit}
   #plan{font-size:13.5px;margin-top:8px;display:none;line-height:1.7}
   /* Reperes du plan (etape, depart, arrivee) en noir, lisere clair pour le mode sombre :
@@ -97,7 +97,7 @@
     mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='M22 17.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 18.57a1 1 0 0 1-.6-.92'/%3E%3Cpath d='M22 12.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 13.57a1 1 0 0 1-.6-.92'/%3E%3C/svg%3E") center/20px 20px no-repeat
   }
   @media (pointer:coarse){
-    .btn,.case,.fl,select,.barre input:not([type=checkbox]),#vnom,#conso,#cuve,#reserve,.leaflet-bar a{
+    .btn,.case,.fl,select,.barre input:not([type=checkbox]),#vnom,#conso,#cuve,#reserve,#autonomie,.leaflet-bar a{
       min-height:44px;min-width:44px
     }
     .leaflet-bar a{line-height:44px}

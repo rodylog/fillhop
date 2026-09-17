@@ -57,6 +57,7 @@ function reglagesEcrits(){
   v.carbs = choix();
   v.conso = document.getElementById('conso').value;
   v.cuve  = document.getElementById('cuve').value;
+  v.autonomie = document.getElementById('autonomie').value;
   v.reserve = document.getElementById('reserve').value;
   REGL.sansCher = document.getElementById('sansCher').checked;
   REGL.couloir  = document.getElementById('couloir').value;
@@ -74,7 +75,19 @@ function appliquerVeh(){
   document.querySelectorAll('#carbs input').forEach(i => i.checked = v.carbs.includes(i.value));
   document.getElementById('conso').value = v.conso || '';
   document.getElementById('cuve').value  = v.cuve || '';
+  document.getElementById('autonomie').value = v.autonomie || '';
   document.getElementById('reserve').value = v.reserve || '';
+  majEstimations();
+}
+// Autonomie d'un plein et reservoir se deduisent l'un de l'autre par la conso : chaque
+// champ affiche en grise ce qu'il vaudrait d'apres l'autre, ce qui montre tout de suite
+// un ecart entre les deux saisies (l'autonomie prime dans le calcul, cf. autonomieUtile).
+function majEstimations(){
+  const conso = +document.getElementById('conso').value;
+  const cuve = +document.getElementById('cuve').value;
+  const auto = +document.getElementById('autonomie').value;
+  document.getElementById('autonomie').placeholder = conso > 0 && cuve > 0 ? `≈ ${Math.round(cuve / conso * 100)}` : '600';
+  document.getElementById('cuve').placeholder = conso > 0 && auto > 0 ? `≈ ${Math.round(auto * conso / 100)}` : '50';
 }
 const coches = REGL.vehicules[REGL.vehActif].carbs;
 document.getElementById('carbs').innerHTML = CASES.map(([k,l]) =>
@@ -406,13 +419,15 @@ function rendu(){
   if(ROUTE && KMS){
     const conso = +document.getElementById('conso').value;
     const cuve  = +document.getElementById('cuve').value;
+    const autonomie = +document.getElementById('autonomie').value;
+    // Reserve en KM (choix d'ergonomie) : plus parlant qu'un pourcentage.
+    const resv = Math.max(0, +document.getElementById('reserve').value || 30);
+    const au = autonomieUtile(conso, cuve, autonomie, resv);
     elPlan.style.display = 'block';
-    if(!(conso > 0) || !(cuve > 0)){
-      elPlan.innerHTML = '<span style="color:var(--muted)">Renseigne conso et réservoir pour savoir où faire le plein.</span>';
+    if(!(conso > 0) || !au){
+      elPlan.innerHTML = '<span style="color:var(--muted)">Renseigne la conso et l\'autonomie d\'un plein (ou le réservoir) dans la fiche du véhicule pour savoir où faire le plein.</span>';
     }else{
-      // Reserve en KM (choix d'ergonomie) : plus parlant qu'un pourcentage.
-      const resv = Math.max(0, +document.getElementById('reserve').value || 30);
-      const A = cuve / conso * 100 - resv;
+      const A = au.A;
       const total = KMS[KMS.length - 1];
       const larg = +document.getElementById('couloir').value;
       const lkm = conso / 100;
@@ -486,8 +501,9 @@ function rendu(){
         (depart ? nomStation(depart) : 'aucune station à moins de 15 km du départ dans ce couloir');
       const ligneArrivee = `<span class="badge">${ICO.pompe} Arrivée</span> Plein à l'arrivée : ` +
         (arrivee ? nomStation(arrivee) : 'aucune station à moins de 15 km de l\'arrivée dans ce couloir');
-      const tete = `${ligneDepart} · autonomie utile ~${Math.round(A)} km`+
-                   ` (${cuve} L × ${String(conso).replace('.', ',')} L/100, réserve ${resv} km)`;
+      const origine = au.source === 'autonomie' ? `plein ≈ ${Math.round(au.plein)} km`
+                    : `${cuve} L × ${String(conso).replace('.', ',')} L/100`;
+      const tete = `${ligneDepart} · autonomie utile ~${Math.round(A)} km (${origine}, réserve ${resv} km)`;
       if(plan === null){
         elPlan.innerHTML = `${tete} · <b style="color:#c02626">${ICO.alerte} trajet infaisable avec cette`+
           ` autonomie dans ce couloir</b> — élargis le couloir, réduis la réserve ou vérifie conso et réservoir`;
@@ -594,7 +610,7 @@ function ouvrirFiche(){
 }
 document.getElementById('vehPlus').onclick = () => {
   REGL.vehicules.push({nom: 'Véhicule ' + (REGL.vehicules.length + 1),
-    carbs: DEFAUT.slice(), conso: '', cuve: '', reserve: ''});
+    carbs: DEFAUT.slice(), conso: '', cuve: '', autonomie: '', reserve: ''});
   REGL.vehActif = REGL.vehicules.length - 1;
   appliquerVeh(); majSelectVeh(); reglagesEcrits(); ouvrirFiche(); charger();
 };
@@ -620,7 +636,8 @@ document.getElementById('vehMoins').onclick = () => {
 };
 
 // Import d'une fiche vehicule par l'URL — sert aussi a PARTAGER un profil :
-//   fuelpilot.html#veh=Nom|e85+e10|conso|cuve|reserve
+//   fuelpilot.html#veh=Nom|e85+e10|conso|cuve|reserve[|autonomie]
+// (autonomie d'un plein en km, 6e champ facultatif : les anciens liens restent valables)
 (function(){
   // #pos=lat,lon : pose le repere sans geolocalisation — indispensable en
   // file:// (Firefox reserve la geolocalisation aux contextes securises).
@@ -630,13 +647,13 @@ document.getElementById('vehMoins').onclick = () => {
     history.replaceState(null, '', location.pathname);
     return;
   }
-  const m = location.hash.match(/^#veh=([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)$/);
+  const m = location.hash.match(/^#veh=([^|]+)\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)(?:\|([^|]*))?$/);
   if(!m) return;
   const nom = decodeURIComponent(m[1]);
   const v = {nom,
     carbs: m[2] ? decodeURIComponent(m[2]).split('+') : DEFAUT.slice(),
     conso: decodeURIComponent(m[3]), cuve: decodeURIComponent(m[4]),
-    reserve: decodeURIComponent(m[5])};
+    reserve: decodeURIComponent(m[5]), autonomie: m[6] ? decodeURIComponent(m[6]) : ''};
   const i = REGL.vehicules.findIndex(x => x.nom === nom);
   if(i >= 0) REGL.vehicules[i] = v; else REGL.vehicules.push(v);
   REGL.vehActif = i >= 0 ? i : REGL.vehicules.length - 1;
@@ -747,7 +764,10 @@ map.on('moveend zoomend', () => {
 document.getElementById('couloir').onchange = () => { reglagesEcrits(); if(ROUTE) rendu(); };
 document.getElementById('conso').onchange =
 document.getElementById('cuve').onchange =
+document.getElementById('autonomie').onchange =
 document.getElementById('reserve').onchange = () => { reglagesEcrits(); rendu(); };
+['conso', 'cuve', 'autonomie'].forEach(id =>
+  document.getElementById(id).addEventListener('input', majEstimations));
 document.getElementById('queUtiles').onchange = () => { reglagesEcrits(); rendu(); };
 document.getElementById('sansPeage').onchange = () => {
   reglagesEcrits();
