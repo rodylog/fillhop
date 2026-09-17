@@ -78,10 +78,20 @@
      images/layers.png, absent de la page assemblee (fichier unique, pas de
      dossier images/) -> 404 et carre blanc vide. Remplacement par un SVG
      inline (data URI), sans nouvel hote ni fichier externe. */
+  /* Icone du selecteur de fonds en MASQUE teinte par currentColor, pas en image de
+     fond : elle suit la couleur du texte, donc reste visible quand le navigateur
+     assombrit lui-meme la page (mode sombre force de Chrome, extensions de type Dark
+     Reader). Une image de fond gardait son trait fonce sur un bouton devenu sombre :
+     carre vide constate le 17/09/2026 dans Chrome. */
   .leaflet-control-layers-toggle,
   .leaflet-retina .leaflet-control-layers-toggle{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='M22 17.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 18.57a1 1 0 0 1-.6-.92'/%3E%3Cpath d='M22 12.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 13.57a1 1 0 0 1-.6-.92'/%3E%3C/svg%3E") !important;
-    background-size:20px 20px;
+    background-image:none !important;position:relative;color:#333
+  }
+  .leaflet-control-layers-toggle::before{
+    content:"";position:absolute;inset:0;margin:auto;width:20px;height:20px;
+    background-color:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='M22 17.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 18.57a1 1 0 0 1-.6-.92'/%3E%3Cpath d='M22 12.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 13.57a1 1 0 0 1-.6-.92'/%3E%3C/svg%3E") center/20px 20px no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z'/%3E%3Cpath d='M22 17.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 18.57a1 1 0 0 1-.6-.92'/%3E%3Cpath d='M22 12.65a1 1 0 0 1-.6.92l-8.6 3.91a2 2 0 0 1-1.65 0L2.6 13.57a1 1 0 0 1-.6-.92'/%3E%3C/svg%3E") center/20px 20px no-repeat
   }
   @media (pointer:coarse){
     .btn,.case,.fl,select,.barre input:not([type=checkbox]),#vnom,#conso,#cuve,#reserve,.leaflet-bar a{
