@@ -5,7 +5,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {optimiserPlan} = require('./plan.js');
+const {optimiserPlan, pleinsExtremites} = require('./plan.js');
 
 // Comparaison avec tolerance : les couts en euros passent par des
 // multiplications flottantes (ex: 1.2*2*53 = 127.19999999999999).
@@ -128,4 +128,36 @@ test('deux arrets imposes par l\'autonomie, plan en km croissants', () => {
   assert.deepStrictEqual(r.plan.map(x => x.s), ['S1', 'S2']);
   assert.ok(r.plan[0].km < r.plan[1].km);
   assert.ok(presque(r.coutAchats, 170));
+});
+
+// ---- pleinsExtremites : plein au depart et a l'arrivee ----
+
+test('depart : la moins chere dans les 15 premiers km, celles au-dela ignorees', () => {
+  // D1 (km 3, 0.90) et D2 (km 12, 0.85) sont dans le rayon ; LOIN (km 40, 0.70)
+  // est moins chere mais hors rayon : D2 doit etre retenue.
+  const D1 = {s: 'D1', km: 3, e: 1, p: 0.90};
+  const D2 = {s: 'D2', km: 12, e: 2, p: 0.85};
+  const LOIN = {s: 'LOIN', km: 40, e: 0, p: 0.70};
+  const r = pleinsExtremites([D1, D2, LOIN], 600);
+  assert.strictEqual(r.depart.s, 'D2');
+});
+
+test('a prix egal, le plus petit detour l\'emporte', () => {
+  const A1 = {s: 'A1', km: 5, e: 4, p: 0.85};
+  const A2 = {s: 'A2', km: 9, e: 1, p: 0.85};
+  assert.strictEqual(pleinsExtremites([A1, A2], 600).depart.s, 'A2');
+});
+
+test('arrivee : la moins chere dans les 15 derniers km', () => {
+  // total 600 : rayon d'arrivee = km >= 585. M (km 300) est hors des deux rayons.
+  const M = {s: 'M', km: 300, e: 0, p: 0.60};
+  const F1 = {s: 'F1', km: 590, e: 3, p: 0.88};
+  const F2 = {s: 'F2', km: 598, e: 1, p: 0.84};
+  const r = pleinsExtremites([M, F1, F2], 600);
+  assert.strictEqual(r.arrivee.s, 'F2');
+  assert.strictEqual(r.depart, null);   // aucune station dans les 15 premiers km
+});
+
+test('aucune station : depart et arrivee null', () => {
+  assert.deepStrictEqual(pleinsExtremites([], 600), {depart: null, arrivee: null});
 });

@@ -59,5 +59,17 @@ function optimiserPlan(cand, A, total, lkm){
   return {plan, coutAchats, utiles};
 }
 
+// Plein au depart et plein a l'arrivee. Le plan suppose un reservoir plein au
+// depart : encore faut-il savoir OU le faire, et ou refaire le plein en arrivant
+// (demande Eric, 17/09/2026). Pour chaque bout du trajet : la station la moins
+// chere a moins de `rayon` km du debut (resp. de la fin) ; a prix egal, le plus
+// petit detour. null si aucune station dans le rayon.
+function pleinsExtremites(cand, total, rayon = 15){
+  const meilleure = liste => liste.length ? liste.reduce((x, y) =>
+    (y.p < x.p - 1e-9 || (Math.abs(y.p - x.p) <= 1e-9 && y.e < x.e)) ? y : x) : null;
+  return {depart:  meilleure(cand.filter(c => c.km <= rayon)),
+          arrivee: meilleure(cand.filter(c => c.km >= total - rayon))};
+}
+
 // Export Node (tests) ; sans effet dans la page, ou `module` n'existe pas.
-if(typeof module !== 'undefined' && module.exports) module.exports = {optimiserPlan};
+if(typeof module !== 'undefined' && module.exports) module.exports = {optimiserPlan, pleinsExtremites};

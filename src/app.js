@@ -380,14 +380,15 @@ function rendu(){
   const fleche = (th.textContent.match(/ [▲▼]$/) || [''])[0];   // ne pas manger le tri
   th.textContent = (ROUTE ? 'Écart au trajet' : 'Distance') + fleche;
 
-  let tri = [...gardees].sort((a,b)=>{
+  const ordre = (a,b)=>{
     let x,y;
     if(sortKey==='prix'){x=a.v.p;y=b.v.p;}
     else if(sortKey==='dist'){x=ROUTE?a.s.ecart:a.s.d;y=ROUTE?b.s.ecart:b.s.d;}
     else if(sortKey==='maj'){x=a.v.maj||'';y=b.v.maj||'';}
     else {x=(a.s[sortKey]||'').toLowerCase();y=(b.s[sortKey]||'').toLowerCase();}
     return (x>y?1:x<y?-1:0)*(sortAsc?1:-1);
-  });
+  };
+  let tri = [...gardees].sort(ordre);
   majCompte(ecartees ? ` · ${ecartees} trop chère${ecartees>1?'s':''} masquée${ecartees>1?'s':''}` : '');
 
   // ---- Plan de pleins : plein au depart, arrets choisis au moins cher ----
@@ -396,6 +397,10 @@ function rendu(){
   // vaut une station chere qu'une panne seche), la moins chere ; a prix egal,
   // la plus lointaine. Glouton simple, suffisant a cette echelle.
   const etapeNum = new Map();
+  // Plein au depart / a l'arrivee : station -> libelle. Toujours visibles, meme avec
+  // le filtre « arrets du plan » (demande Eric, 17/09/2026 : Orleans > Montpellier,
+  // aucune station ni au depart ni a l'arrivee).
+  const extremites = new Map();
   // Trajet sans arret necessaire : stations gardees a la place du plan (voir plus bas).
   const moinsCheres = new Set();
   let utilesPlan = null, horsPlan = 0;
@@ -449,9 +454,10 @@ function rendu(){
       const minutes = e => 5 + (2 * e.e) / 50 * 60;
       const tempsTotal = (plan || []).reduce((t, e) => t + minutes(e), 0);
 
-      // Pour repartir : la moins chere a moins de 15 km de l'arrivee.
-      const finTrajet = cand.filter(c => c.km >= total - 15);
-      const retour = finTrajet.length ? finTrajet.reduce((x,y) => y.p < x.p ? y : x) : null;
+      // Ou faire le plein avant de partir, et ou le refaire en arrivant (15 km de chaque bout).
+      const {depart, arrivee} = pleinsExtremites(cand, total);
+      if(depart) extremites.set(depart.s, 'Départ');
+      if(arrivee) extremites.set(arrivee.s, extremites.has(arrivee.s) ? 'Départ et arrivée' : 'Arrivée');
 
       (plan || []).forEach((e,i) => etapeNum.set(e.s, i + 1));
       // Trajet court, aucun arret necessaire : le filtre « arrets du plan » ne doit pas
@@ -471,7 +477,17 @@ function rendu(){
           fill: false, dashArray: '5 5'}).addTo(etapeLayer)
           .bindTooltip(`Étape ${i+1} — km ${Math.round(e.km)}`);
       });
-      const tete = `Plein au départ · autonomie utile ~${Math.round(A)} km`+
+      [[depart, '#158a3f', 'Plein au départ'], [arrivee, '#111827', 'Plein à l\'arrivée']].forEach(([o, c, t]) => {
+        if(o) L.circleMarker([o.s.la, o.s.lo], {radius: 17, color: c, weight: 3, fill: false})
+               .addTo(etapeLayer).bindTooltip(`${t} — km ${Math.round(o.km)}`);
+      });
+      const nomStation = o => `<b>${o.s.ville}</b> ${o.v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)}`).join(' + ')} €`+
+                              ` (km ${Math.round(o.km)}, détour ${(2*o.e).toFixed(1)} km)`;
+      const ligneDepart = `<span class="badge badge-dep">${ICO.pompe} Départ</span> Plein au départ : ` +
+        (depart ? nomStation(depart) : 'aucune station à moins de 15 km du départ dans ce couloir');
+      const ligneArrivee = `<span class="badge badge-arr">${ICO.pompe} Arrivée</span> Plein à l'arrivée : ` +
+        (arrivee ? nomStation(arrivee) : 'aucune station à moins de 15 km de l\'arrivée dans ce couloir');
+      const tete = `${ligneDepart} · autonomie utile ~${Math.round(A)} km`+
                    ` (${cuve} L × ${String(conso).replace('.', ',')} L/100, réserve ${resv} km)`;
       if(plan === null){
         elPlan.innerHTML = `${tete} · <b style="color:#c02626">${ICO.alerte} trajet infaisable avec cette`+
@@ -483,7 +499,8 @@ function rendu(){
           (voyage != null ? ` · carburant du voyage ≈ <b>${voyage.toFixed(2)} €</b> (plein au départ)` : '') +
           (lst.length ? `<br>Pour un plein en route, les moins chères du couloir dans la zone affichée : ` +
             lst.map(o => `<b>${o.s.ville}</b> ${o.v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)}`).join(' + ')} €`+
-                         ` (km ${Math.round(o.s.kmr)}, détour ${(2*o.s.ecart).toFixed(1)} km)`).join(' · ') : '');
+                         ` (km ${Math.round(o.s.kmr)}, détour ${(2*o.s.ecart).toFixed(1)} km)`).join(' · ') : '') +
+          `<br>${ligneArrivee}`;
       }else{
         elPlan.innerHTML = tete +
           ` · plan optimal sur ${COURT[carbPlan] || 'SP'}, détours comptés — achats en route ≈ <b>${coutTotal.toFixed(2)} €</b>` +
@@ -494,14 +511,19 @@ function rendu(){
             `<span class="badge">${ICO.pompe} ${i+1}</span> ${e.s.ville} km ${Math.round(e.km)}`+
             ` (détour ${(2*e.e).toFixed(1)} km ≈ ${(2*e.e*lkm*e.p).toFixed(2)} €, ~${Math.round(minutes(e))} min)`+
             ` — ${e.v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)}`).join(' + ')} €`).join(' · ') +
-          `<br><span style="color:var(--muted)">Voyage selon le couloir — ${comparatif}` +
-          (retour ? ` · Plein du retour : ${retour.s.ville} ${retour.p.toFixed(3)} € (km ${Math.round(retour.km)})` : '') +
-          `</span>`;
+          `<br>${ligneArrivee}` +
+          `<br><span style="color:var(--muted)">Voyage selon le couloir — ${comparatif}</span>`;
       }
     }
+    // Une station du plan (etape, depart, arrivee) reste visible meme « trop chere » :
+    // le plan y passe. La masquer faisait croire a un plan vide (constate le 17/09/2026 :
+    // Le Caylar, etape 1 d'Orleans > Montpellier, absente du tableau et de la carte).
+    const dansTri = new Set(tri.map(o => o.s));
+    const reprises = list.filter(o => (etapeNum.has(o.s) || extremites.has(o.s)) && !dansTri.has(o.s));
+    if(reprises.length){ tri.push(...reprises); tri.sort(ordre); }
     if(utilesPlan && document.getElementById('queUtiles').checked){
       const avant = tri.length;
-      tri = tri.filter(({s}) => etapeNum.has(s) || moinsCheres.has(s));
+      tri = tri.filter(({s}) => etapeNum.has(s) || moinsCheres.has(s) || extremites.has(s));
       const off = avant - tri.length;
       horsPlan = off;
       if(off) majCompte(` · ${off} hors plan masquée${off>1?'s':''}`);
@@ -532,13 +554,14 @@ function rendu(){
       ? `<span class="pill" style="background:${couleur(v.p, refTotal, miniTotAff)}">${v.p.toFixed(3)} €</span>`+
         `<div style="margin-top:4px;display:flex;gap:5px;flex-wrap:wrap">${chips}</div>`
       : chips;
-    const et = etapeNum.get(s), mc = moinsCheres.has(s);
+    const et = etapeNum.get(s), mc = moinsCheres.has(s), ex = extremites.get(s);
     const tr=document.createElement('tr');
-    if(et || mc) tr.className = 'etape';
+    if(et || mc || ex) tr.className = 'etape';
     tr.innerHTML = `<td>${prix}</td>`+
       `<td>${(ROUTE ? s.ecart : s.d).toFixed(1)} km`+
       (ROUTE && s.kmr != null ? `<br><span style="color:var(--muted);font-size:12px">km ${Math.round(s.kmr)}</span>` : '')+`</td>`+
-      `<td>${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : mc ? `<span class="badge">Moins chère</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
+      `<td>${ex ? `<span class="badge ${ex === 'Arrivée' ? 'badge-arr' : 'badge-dep'}">${ICO.pompe} ${ex}</span><br>` : ''}`+
+      `${et ? `<span class="badge">${ICO.pompe} Étape ${et}</span><br>` : mc ? `<span class="badge">Moins chère</span><br>` : ''}${s.ville}<br><span style="color:var(--muted);font-size:12.5px">${s.cp}</span></td>`+
       `<td>${s.adresse}${s.auto?' <span style="color:var(--muted)">· 24/24</span>':''}</td>`+
       `<td>${jour(v.maj)}</td>`;
     tr.onclick = ()=>{ map.setView([s.la,s.lo],15,{animate:!CALME}); window.open(gmaps(s),'_blank','noopener'); };
