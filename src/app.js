@@ -744,7 +744,7 @@ function situer(lat, lon, libelle){
       const c = j.features?.[0]?.properties?.city;
       if(c){
         document.getElementById('lieu').textContent = ' — ' + c;
-        document.title = 'FuelPilot — ' + c;
+        document.title = 'FillHop — ' + c;
       }
     }).catch(() => {});
 }
@@ -929,7 +929,7 @@ function montrerNouvelleVersion(){
   const d = document.createElement('div');
   d.id = 'majDispo'; d.className = 'maj-dispo'; d.setAttribute('role', 'status');
   const t = document.createElement('span');
-  t.textContent = 'Nouvelle version de FuelPilot disponible';
+  t.textContent = 'Nouvelle version de FillHop disponible';
   const b = document.createElement('button');
   b.type = 'button'; b.className = 'btn'; b.textContent = 'Recharger';
   b.onclick = () => location.reload();

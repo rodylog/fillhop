@@ -1,4 +1,4 @@
-# ⛽ FuelPilot
+# ⛽ FillHop
 
 Carte des prix des carburants en France **avec planification optimale des pleins**,
 dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tracker.
