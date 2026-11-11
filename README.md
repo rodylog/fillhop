@@ -3,7 +3,7 @@
 Carte des prix des carburants en France — et en Espagne dès que la carte ou le trajet
 la touche — **avec planification optimale des pleins** — et,
 pour un véhicule électrique, les bornes de recharge et le **plan de charge** —,
-dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tracker.
+dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans traceur.
 
 ## Ce que ça fait
 
@@ -51,7 +51,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   facturés en carburant ET en minutes. L'ancien modèle facturait à chaque arrêt
   tout le reste du trajet et poussait vers une station tardive et chère
   (Montpellier → Tours : Gannat 0,879 au lieu de Vic-le-Comte 0,859). Chaque
-  étape affiche les litres à prendre et le carburant à bord. Champ **Réservoir
+  arrêt affiche les litres à prendre et le carburant à bord. Champ **Réservoir
   au départ** (km ou litres — l'unité est mémorisée, la valeur non), demandé
   d'office au lancement de chaque nouveau trajet (« Il vous reste combien dans
   le réservoir ? », Valider / Passer = plein ; jamais sur un lien partagé) : le
@@ -61,7 +61,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   prix 0,85 €/L · −11,40 € vs pleins au plus cher (1,05 €/L) » (référence = le
   même calcul sur les mêmes stations, tous les prix remplacés par le plus cher du
   trajet — plus de médiane, demande du 24/10/2026), ligne de temps verticale
-  (départ, étapes avec « Y aller », arrivée, retour), états dessinés (infaisable
+  (départ, arrêts avec « Y aller », arrivée, retour), états dessinés (infaisable
   avec ses remèdes, aucun arrêt nécessaire, véhicule à compléter).
 - **Corrections sur place** (26/10/2026, Lodève : E85 annoncé par le flux officiel,
   pompe vide) : dans la fiche station, chaque carburant a « Corriger » — prix vu à la
@@ -89,7 +89,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   le plan de pleins écarte les candidates signalées vides depuis moins de 12 h **avant**
   `optimiserPlan` (option « Éviter les pompes signalées vides (12 h) », activée d'office) et la
   carte-héros dit combien et lesquelles ; si plus aucun plan ne passe sans elles, il les garde et le
-  dit (avertissement rouge, alerte sur chaque étape concernée). Lecture par lots de 400
+  dit (avertissement rouge, alerte sur chaque arrêt concerné). Lecture par lots de 400
   identifiants, cache mémoire 60 s, réponses obsolètes abandonnées comme pour le flux, échec réseau
   silencieux (la fonction s'efface). Un signalement par station et carburant par 6 h (journal local
   `fuelpilot:signalements`, boutons désactivés avec le délai restant), 429 du service expliqué en
@@ -113,7 +113,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   inverse départ et arrivée, c'est le geste retenu) ; le mécanisme reste pour les
   liens `#trajet=…|r` et les trajets mémorisés : le retour est un second itinéraire,
   le plan couvre la boucle (une station proche des deux sens compte deux fois),
-  le plein du retour devient une étape, le tracé montre l'aller et le retour.
+  le plein du retour devient un arrêt, le tracé montre l'aller et le retour.
 - **Partage du plan** : `fuelpilot.html#trajet=<départ>|<arrivée>|<détour>|<options>&veh=…`
   — départ et arrivée tels que saisis (`encodeURIComponent` ; départ vide =
   « Ma position », jamais une coordonnée), détour ∈ {1, 2, 5, 10, 20} km, options
@@ -152,7 +152,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   service worker et le manifeste servis à côté). Rien ne s'exécute côté serveur : un fichier
   statique servi en https suffit.
 - **Lisibilité** : vert = le moins cher affiché (ex æquo compris), bleu = dans la
-  norme, noir = repères du plan (étapes, départ, arrivée), rouge = les
+  norme, noir = repères du plan (arrêts, départ, arrivée), rouge = les
   10 % les plus chers du secteur, stations en **rupture** du carburant choisi
   écartées du classement et du plan mais montrées en **gris** avec la date de début
   (ruptures temporaires de moins de 90 jours ; le flux vide leur prix, Waze garde
@@ -215,9 +215,10 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   bandeau « Nouvelle version » propose de recharger — jamais de rechargement automatique.
   Toute erreur du worker laisse la page fonctionner comme avant ; en `file://` rien ne change
   (le `fuelpilot.html` téléchargé marche sans ces deux fonctions). Aucune donnée personnelle en
-  cache : jamais la position (le géocodage inverse n'est pas intercepté), jamais le garage ; les
-  réponses de prix sont indexées par l'emprise de la carte (un rectangle), pas par le point de
-  l'appareil.
+  cache : jamais la position exacte (le géocodage inverse n'est pas intercepté), jamais le
+  garage ; les réponses de prix sont indexées par un rectangle de la grille de 0,05° (≈ 5 km),
+  jamais par le point de l'appareil, et celles du secteur des couleurs sous une clé sans
+  coordonnées (voir « Limites connues », ce qui part de l'appareil).
 - **Interface** : la carte est l'écran, tout le reste flotte dessus — pilule de
   recherche, chip véhicule (garage), feuille glissante à trois crans sur mobile,
   panneau gauche de 400 px sur bureau ; fiche station, garage, options et aide
@@ -270,6 +271,7 @@ Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
 | `src/partage.js` | format `#veh=` : `vehVersParam` / `paramVersVeh`, format historique et 7ᵉ champ électrique, lien ancien toujours lu ; pur, exporté pour Node |
 | `src/es.js` | Espagne : `nombreES`, `normaliserStationES` (forme d'une station française), `ouvertA` / `resumerHorario` (horaires `L-S: 06:00-22:00; D: …`), `provincesPourEmprise` / `enEspagne`, `villeES` (table `ES_VILLES` des villes espagnoles saisissables comme départ ou arrivée) ; pur, exporté pour Node |
 | `src/lieux.js` | choix du lieu parmi les 5 réponses du géocodeur : `choisirLieu` (un nom seul vaut la commune de ce nom, jamais une voie homonyme ; une adresse garde le meilleur score ; rien sous 0,5 ; sinon refus), `libelleTrajet` (en-tête du plan) ; pur, exporté pour Node, testé sur des réponses réelles (`src/fixtures/geocodage-geopf.json`) |
+| `src/affichage.js` | affichage : `nombreFr` et ses formats (`prixFr` au millième, `kmFr` au dixième, `eurosFr` au centime — virgule décimale partout à l'écran), `listeFr` (carburants en rupture du flux, « SP95;GPLc » → « SP95, GPLc ») ; étiquettes de la carte en vue large : `etiquettesParCase` (sous le zoom 10, la moins chère de chaque case de 72 px garde son prix, les autres deviennent des pastilles), `caseGrille` ; pur, exporté pour Node |
 | `src/signalements.js` | signalements partagés « pompe vide » : `libelle` (badge), `aEviter` (seuil 1, fenêtre 12 h, un « ok » plus récent remet à zéro), `peutSignaler` / `delaiRestant` / `noterSignalement` (journal local, 6 h), `lotsIds` (paquets de 400) ; pur, exporté pour Node |
 | `src/es-provincias.json` | les 52 provinces : id → [nom, nb de stations, latMin, latMax, lonMin, lonMax], calculées le 28/10/2026 depuis le fichier complet ; inliné à la génération |
 | `src/fixtures/es-echantillon-girona.json` | réponse réelle `FiltroProvincia/17` tronquée à 3 stations (tests) |
@@ -282,7 +284,7 @@ Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
 | `src/pwa-strategie.js` | règles du service worker à partir de l'URL seule : `decider` (coquille / prix / es / irve / reseau), `nomCacheCoquille`, `cachesAPurger`, `entreesAPurger` (limite, âge), `choisirRepli` (même famille de requête) ; pur, exporté pour Node |
 | `src/sw.js` | corps du service worker (install, activate, fetch, message « activer ») ; `pwa/sw.js` = `pwa-strategie.js` + `sw.js`, assemblé par `generate.py` |
 | `pwa/` | fichiers à servir **à côté de la page** : `manifest.webmanifest`, `icone-192.png`, `icone-512.png`, `icone-maskable-512.png` (générées une fois depuis `icone.svg` / `icone-maskable.svg` par `generer-icones.js`, commitées), `sw.js` |
-| `src/plan.test.js`, `src/conso.test.js`, `src/irve.test.js`, `src/plan-elec.test.js`, `src/bornes.test.js`, `src/partage.test.js`, `src/es.test.js`, `src/signalements.test.js`, `src/pwa-strategie.test.js` | tests des modules purs |
+| `src/plan.test.js`, `src/conso.test.js`, `src/irve.test.js`, `src/plan-elec.test.js`, `src/bornes.test.js`, `src/partage.test.js`, `src/es.test.js`, `src/signalements.test.js`, `src/pwa-strategie.test.js`, `src/affichage.test.js` | tests des modules purs |
 | `recette/signalements.js`, `recette/captures/` | recette headless des signalements (Playwright, services simulés par `route`) et ses captures |
 | `recette/pwa.js` | recette headless (Playwright) : http local, service worker, deuxième chargement depuis le cache, hors ligne, nouvelle version, `file://` ; captures dans `recette/captures/` |
 | `irve_build.py`, `irve_build_test.py` | Base nationale des IRVE (CSV, 114 Mo) → `data/irve/<dep>.json` + `index.json`, bibliothèque standard seule ; tests `unittest` du département et de l'emprise |
@@ -290,7 +292,7 @@ Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
 | `outils/accessibilite/` | banc de mesure (hors build) : `axe.cjs`, `clavier.cjs`, `perf.cjs`, données factices `donnees.cjs`, page et états `banc.cjs` ; `npm install` puis `node axe.cjs <page.html> <dossier>` |
 
 Les scripts sont assemblés dans l'ordre de `SCRIPTS` (`generate.py`) en un seul
-`<script>` : `plan.js`, `conso.js`, `irve.js`, `bornes.js`, `partage.js`, `es.js`, `lieux.js`, `signalements.js`, `ui/*.js`, puis `app.js`.
+`<script>` : `plan.js`, `conso.js`, `irve.js`, `bornes.js`, `partage.js`, `es.js`, `lieux.js`, `signalements.js`, `affichage.js`, `ui/*.js`, puis `app.js`.
 
 ```bash
 node --test src/*.test.js                        # modules purs (Node ≥ 20)
@@ -524,8 +526,23 @@ option, évitement levé). Captures dans `recette/captures/`. Le service réel n
   déjà chargées, avec leur date ; pas de fond de carte, pas d'itinéraire, pas de géocodage
   (jamais mis en cache). Prix gardés 7 jours (50 réponses), bornes 60 jours (40 fichiers).
   Quota de stockage réel et installation sur un vrai Android non vérifiés ici.
+- Ce qui part de l'appareil (11/11/2026) : la **position exacte ne part ni vers le flux des
+  prix ni vers le cache hors ligne**. Le flux des prix ne reçoit que des rectangles élargis à la
+  grille de 0,05° (≈ 5 km : la vue de la carte, ou les zones du trajet) et, pour le secteur des
+  couleurs (60 km), le nœud de cette grille le plus proche du repère ; les stations hors de la
+  vue ainsi chargées ne sont ni listées ni comptées. Le géocodage inverse (nom de la commune
+  dans le titre) reçoit le repère arrondi à 0,01° (≈ 1 km). **Restent envoyés tels quels** : le
+  texte saisi dans départ et arrivée (géocodage), et les deux bouts du trajet au service
+  d'itinéraire (IGN, OpenStreetMap en secours) — donc la position exacte quand le départ est
+  « Ma position » : le tracé en a besoin ; ces réponses ne sont jamais mises en cache. Le fond
+  de carte reçoit les tuiles de la zone regardée. Le garage et les trajets mémorisés ne
+  quittent pas l'appareil.
 - 400 éléments affichés par zone au maximum, stations et bornes confondues (annoncé à
-  l'écran quand ça tronque) ; bornes : 4 départements à la fois au plus en vue libre.
+  l'écran quand ça tronque) ; bornes : 4 départements à la fois au plus en vue libre. Sur un
+  trajet, chaque zone du couloir est demandée par prix croissant du carburant du plan : au-delà
+  de 400, ce sont les plus chères qui manquent, et la carte du plan le dit ; « SP le moins
+  cher » ne se trie pas côté service, la troncature y reste arbitraire (dite aussi). Une zone du
+  trajet restée sans réponse après un second essai manque au plan, qui le dit (« Réessayer »).
 - Bornes de recharge : données **statiques** (pas de disponibilité en temps réel, pas de prix
   au kWh), indisponibles en `file://` (fichiers servis à côté de la page) et, hors ligne, seuls
   les départements déjà chargés restent disponibles ; les

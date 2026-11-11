@@ -51,6 +51,22 @@ test('flux des prix -> reseau d\'abord (prix) ; API espagnole -> es', () => {
   assert.deepStrictEqual(S.decider(es, ctx()), {type: 'es', cle: es});
 });
 
+test('flux des prix, secteur des couleurs (distance autour du repere) : la cle de cache ne porte aucune coordonnee', () => {
+  const api = 'https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/x/records';
+  const secteur = (lon, lat, off) => api + '?where=' + encodeURIComponent(`distance(geom, geom'POINT(${lon} ${lat})', 60km)`) + '&select=id,e10_prix&limit=100&offset=' + off;
+  const d = S.decider(secteur('3.8767', '43.6108', 0), ctx());
+  assert.strictEqual(d.type, 'prix');
+  assert.ok(!/3\.87|43\.61/.test(decodeURIComponent(d.cle)), 'coordonnees dans la cle : ' + d.cle);
+  assert.match(decodeURIComponent(d.cle).replace(/\+/g, ' '), /distance\(geom, geom'POINT\(secteur\)', 60km\)/);
+  // Meme cle ou que soit le repere (le dernier secteur connu sert hors ligne), une cle par page.
+  assert.strictEqual(S.decider(secteur('2.35', '48.85', 0), ctx()).cle, d.cle);
+  assert.notStrictEqual(S.decider(secteur('3.8767', '43.6108', 100), ctx()).cle, d.cle);
+  assert.ok(S.memeFamille(d.cle, secteur('2.35', '48.85', 0)), 'la cle reste de la famille des prix (meme API, meme select)');
+  // Une emprise (rectangle de la grille) garde son URL pour cle.
+  const emprise = api + '?where=in_bbox(geom,43.55,3.80,43.70,3.95)&select=id&limit=100&offset=0';
+  assert.strictEqual(S.decider(emprise, ctx()).cle, emprise);
+});
+
 test('tuiles, style, glyphes, itineraires, geocodage, secours OSM -> jamais en cache', () => {
   for(const u of ['https://data.geopf.fr/tms/1.0.0/PLAN.IGN/12/2000/1400.pbf',
                   'https://data.geopf.fr/annexes/ressources/vectorTiles/styles/PLAN.IGN/attenue.json',

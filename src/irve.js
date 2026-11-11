@@ -186,6 +186,26 @@ function kmsCumules(ligne){
   return kms;
 }
 
+// Cale les abscisses cumulees sur la distance annoncee par le service d'itineraire, sens par
+// sens : le trace recu est simplifie (~400 points), donc plus court que la route reelle (releve
+// du 11/11/2026 : 940,9 km de trace pour 965,3 km annonces) ; sans calage le plan comptait moins
+// de kilometres que le trajet et entamait la reserve. sens = [{fin, km}] dans l'ordre du trace :
+// `fin` = indice du dernier point du sens (aller, puis retour), `km` = sa distance annoncee.
+// Chaque sens est etire d'un facteur km / longueur du trace ; le retour repart exactement du km
+// de fin de l'aller. Distance absente, nulle ou trace de longueur nulle : sens laisse tel quel.
+function calerKms(kms, sens){
+  const res = kms.slice();
+  let debut = 0, base = 0;
+  for(const {fin, km} of sens || []){
+    if(!(fin >= debut && fin < kms.length)) break;
+    const longueur = kms[fin] - kms[debut];
+    const f = longueur > 0 && km > 0 && Number.isFinite(km) ? km / longueur : 1;
+    for(let i = debut; i <= fin; i++) res[i] = base + (kms[i] - kms[debut]) * f;
+    base = res[fin]; debut = fin + 1;
+  }
+  return res;
+}
+
 // Position d'un point par rapport a la ligne : {e: ecart (km), km: abscisse du point le plus
 // proche}. kms : resultat de kmsCumules(ligne) (recalcule s'il manque). null si ligne vide.
 function positionSurLigne(ligne, kms, lon, lat){
@@ -222,4 +242,4 @@ function bornesSurTrajet(stations, ligne, largeurKm){
 // Export Node (tests) ; sans effet dans la page, ou `module` n'existe pas.
 if(typeof module !== 'undefined' && module.exports)
   module.exports = {parseBool, parsePuissance, parseXY, parseHoraires, ouvertA, compatible, filtrerBornes,
-                    kmsCumules, positionSurLigne, bornesSurTrajet};
+                    kmsCumules, calerKms, positionSurLigne, bornesSurTrajet};

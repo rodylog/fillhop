@@ -11,7 +11,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const {parseBool, parsePuissance, parseXY, parseHoraires, ouvertA, compatible, filtrerBornes,
-       kmsCumules, positionSurLigne, bornesSurTrajet} = require('./irve.js');
+       kmsCumules, calerKms, positionSurLigne, bornesSurTrajet} = require('./irve.js');
 
 const FIXTURE = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'irve-34.json'), 'utf-8'));
 const presque = (a, b, tol = 1e-6) => Math.abs(a - b) < tol;
@@ -170,6 +170,25 @@ test('kmsCumules : 1° de latitude = 110,57 km ; 1° de longitude a l\'equateur 
   assert.ok(presque(kmsCumules([[0, 0], [0, 1]])[1], 110.57));
   assert.ok(presque(kmsCumules([[0, 0], [1, 0]])[1], 111.32));
   assert.deepStrictEqual(kmsCumules([[3, 43]]), [0]);
+});
+
+test('calerKms : le total du trace devient la distance annoncee par le service, sens par sens', () => {
+  // Trace simplifie de 940,85 km pour 965,25 km annonces (releve du 11/11/2026, -2,5 %).
+  const kms = [0, 300, 700, 940.85];
+  const c = calerKms(kms, [{fin: 3, km: 965.25}]);
+  assert.ok(presque(c[3], 965.25) && c[0] === 0);
+  assert.ok(presque(c[1], 300 * 965.25 / 940.85) && presque(c[2], 700 * 965.25 / 940.85));
+  assert.deepStrictEqual(kms, [0, 300, 700, 940.85]);                 // l'entree n'est pas modifiee
+  // Aller-retour : chaque sens a son facteur ; le retour repart du km de fin de l'aller.
+  const ar = calerKms([0, 40, 80, 80.2, 130, 160.2], [{fin: 2, km: 84}, {fin: 5, km: 88}]);
+  assert.ok(presque(ar[2], 84) && presque(ar[3], 84) && presque(ar[5], 172));
+  assert.ok(presque(ar[1], 42) && presque(ar[4], 84 + (130 - 80.2) * 88 / 80));
+  for(let i = 1; i < ar.length; i++) assert.ok(ar[i] >= ar[i - 1]);
+  // Distance absente ou nulle, trace de longueur nulle : abscisses inchangees.
+  assert.deepStrictEqual(calerKms([0, 10, 20], [{fin: 2, km: NaN}]), [0, 10, 20]);
+  assert.deepStrictEqual(calerKms([0, 10, 20], [{fin: 2, km: 0}]), [0, 10, 20]);
+  assert.deepStrictEqual(calerKms([0, 0], [{fin: 1, km: 5}]), [0, 0]);
+  assert.deepStrictEqual(calerKms([0, 10, 20], null), [0, 10, 20]);
 });
 
 test('positionSurLigne et bornesSurTrajet : ecart et abscisse sur une ligne nord-sud, tri par km', () => {

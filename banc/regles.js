@@ -9,6 +9,7 @@ const MUET_JOURS = 21;        // au-dela, une station retenue est « muette » (
 const ARRIVEE_JOURS = 14;     // = FIGE_J dans app.js : un plein d'arrivee plus vieux doit etre signale
 const SANS_DETOUR_KM = 2;     // app.js : dRef.w <= 2 -> « Sans détour », au-dela -> « détour nécessaire »
 const TOL_EUR = 0.005;        // demi-centime : arrondis d'affichage
+const TOL_DISTANCE = 0.005;   // 0,5 % : le plan compte les kilometres du trajet annonce (releve du 11/11/2026)
 
 const ageJours = (date, ref) => date ? (new Date(ref) - new Date(date)) / 864e5 : Infinity;
 const euros = x => x == null ? 'non chiffré' : `${x.toFixed(2)} €`;
@@ -102,6 +103,17 @@ const REGLES = [
       return e.economie < -TOL_EUR ? [`économie annoncée ${euros(e.economie)} (référence au plus cher ${euros(e.reference)} < voyage ${euros(plan.voyage)})`] : [];
     },
   },
+  {
+    cle: 'totalPlanDistance',
+    nom: 'le total du plan égale la distance du trajet à 0,5 % près',
+    verifier({plan}){
+      const t = plan.trajet;
+      if(!t || t.km == null || t.total == null) return [];
+      const ecart = Math.abs(t.total - t.km) / t.km;
+      return ecart > TOL_DISTANCE
+        ? [`le plan compte ${t.total.toFixed(1)} km pour un trajet annoncé de ${t.km.toFixed(1)} km (écart ${(ecart * 100).toFixed(1)} % > ${TOL_DISTANCE * 100} %)`] : [];
+    },
+  },
 ];
 
 // Deux rejeux de la meme fixture donnent le meme plan (determinisme) : difference en clair, sinon [].
@@ -118,4 +130,4 @@ function determinisme(a, b){
   return diff;
 }
 
-module.exports = {REGLES, determinisme, retenues, MUET_JOURS, ARRIVEE_JOURS, SANS_DETOUR_KM, TOL_EUR};
+module.exports = {REGLES, determinisme, retenues, MUET_JOURS, ARRIVEE_JOURS, SANS_DETOUR_KM, TOL_EUR, TOL_DISTANCE};

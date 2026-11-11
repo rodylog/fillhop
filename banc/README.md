@@ -63,6 +63,7 @@ Pour chaque dossier de `banc/fixtures/` ayant un `meta.json`, le rejeu vérifie 
 | le message « détour nécessaire » n'apparaît que si le détour minimal dépasse **2 km** (et il apparaît quand un seul choix reste au-delà) | `SANS_DETOUR_KM` |
 | le coût total égale la somme des pleins (carburant à bord + achats aux étapes) | ½ centime |
 | l'économie annoncée est non négative | ½ centime |
+| le total du plan (dernière abscisse du tracé) égale la distance annoncée par le service d'itinéraire | 0,5 % (`TOL_DISTANCE`) |
 | le plan est identique entre deux rejeux (déterminisme) | égalité stricte |
 | le plan rejoué est celui enregistré (`attendu.json`, résumé arrondi) | égalité stricte |
 
@@ -142,7 +143,7 @@ Fabriquées à la main pour que le banc soit testable sans aucune API : `meta.js
 `"origine": "synthetique"`, les réponses de géocodage et d'itinéraire sont au format réel (champs
 minimaux), et le flux des prix est **émulé** à partir de `stations.json` (liste de stations au
 format réel du flux) par `lib/flux.js`, qui applique la clause `where` de la requête (`in_bbox`,
-`distance`, `x_prix is not null`, ruptures), `select`, `limit`, `offset`. Chaque fixture a un
+`distance`, `x_prix is not null`, ruptures), `select`, `order_by`, `limit`, `offset`. Chaque fixture a un
 `LISEZMOI.md` qui dit quelle station exerce quelle règle (station muette, prix figé, rupture,
 détour nécessaire). Les fixtures **enregistrées** n'utilisent pas l'émulation : leurs réponses sont
 rejouées telles quelles.

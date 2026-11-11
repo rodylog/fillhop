@@ -4,8 +4,8 @@
 // le meme panneau est ancre a gauche (CSS), les crans n'ont plus d'effet.
 // Les feuilles modales (fiche station, garage, menus, aide) sont des <section
 // role="dialog"> deja dans la page : jamais une nouvelle page. Une seule ouverte a
-// la fois ; Echap, le voile ou la croix la ferment ; le focus revient au bouton
-// qui l'a ouverte.
+// la fois ; Echap, le voile, la croix ou le bouton « retour » du telephone la ferment ;
+// le focus revient au bouton qui l'a ouverte.
 const MOBILE = matchMedia('(max-width: 767px)');
 // Mouvement reduit demande par l'appareil : aucune transition CSS (voir app.css) ni
 // animation de camera (jumpTo au lieu de easeTo/flyTo dans fond.js et app.js).
@@ -99,6 +99,36 @@ let modaleOuverte = null, modaleOrigine = null;
 const FOND = ['map', 'sansWebgl', 'haut', 'reticule', 'panneau'].map(id => document.getElementById(id))
   .concat([...document.querySelectorAll('.boutons-carte')]).filter(Boolean);
 const fondInerte = on => FOND.forEach(el => { el.inert = on; });
+// ---------- Bouton « retour » du telephone ----------
+// Une feuille ouverte (ou le formulaire du trajet deplie, au telephone) pose UNE entree
+// d'historique (pushState sans URL : l'adresse et son hash ne changent pas) ; le geste
+// « retour » la consomme et ferme ce qui est ouvert — la feuille d'abord, puis le formulaire —
+// au lieu de quitter la page (releve du 11/11/2026). Fermer autrement (croix, Echap, voile,
+// choix dans la feuille) rend l'entree par history.back(), apres coup : une feuille qui en
+// remplace une autre dans le meme geste garde la meme entree. RETOUR.attendus compte ces
+// retours demandes par la page, que popstate ne doit pas prendre pour un geste.
+const RETOUR = {entree: false, attendus: 0};
+const rechercheDepliee = () => MOBILE.matches && document.getElementById('recherche').classList.contains('ouvert');
+const retourUtile = () => !!modaleOuverte || rechercheDepliee();
+function retourOuvert(){
+  if(!retourUtile() || RETOUR.entree || RETOUR.attendus) return;   // rien a fermer (bureau), deja posee, ou posee au retour attendu (popstate)
+  try{ history.pushState({feuille: true}, ''); RETOUR.entree = true; }catch(e){ /* historique indisponible : comme avant */ }
+}
+function retourFerme(){
+  setTimeout(() => {
+    if(!RETOUR.entree || retourUtile()) return;
+    RETOUR.entree = false; RETOUR.attendus++;
+    history.back();
+  }, 0);
+}
+addEventListener('popstate', () => {
+  if(RETOUR.attendus){ RETOUR.attendus--; if(retourUtile()) retourOuvert(); return; }
+  if(!RETOUR.entree) return;   // entree d'un autre temps (page rechargee feuille ouverte) : rien a fermer
+  RETOUR.entree = false;
+  if(modaleOuverte) fermerFeuille();
+  else document.dispatchEvent(new CustomEvent('echap'));   // formulaire du trajet (app.js)
+  if(retourUtile()) retourOuvert();   // il reste le formulaire sous la feuille : un retour de plus le fermera
+});
 const FOCUSABLE = 'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea,[tabindex]:not([tabindex="-1"])';
 function ouvrirFeuille(id, origine){
   const m = document.getElementById(id);
@@ -107,6 +137,7 @@ function ouvrirFeuille(id, origine){
   else if(!modaleOuverte) modaleOrigine = origine || document.activeElement;
   modaleOuverte = m;
   m.hidden = false; voile.hidden = false;
+  retourOuvert();
   fondInerte(true);
   m.scrollTop = 0;
   // Le focus entre dans la feuille : premier champ ou bouton apres la croix, sinon le titre.
@@ -119,6 +150,7 @@ function fermerFeuille(){
   if(!modaleOuverte) return;
   const id = modaleOuverte.id;
   modaleOuverte.hidden = true; voile.hidden = true; modaleOuverte = null;
+  retourFerme();
   fondInerte(false);
   // Retour du focus a l'element d'origine ; s'il a ete redessine entre-temps (liste
   // des stations refaite apres un deplacement de la carte), a son homologue (meme data-id).

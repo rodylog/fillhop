@@ -59,7 +59,7 @@ MAPLIBRE = {
         "sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"),
 }
 # Scripts du gabarit, dans l'ordre d'assemblage (un seul <script> a la fin de la page).
-SCRIPTS = ["plan.js", "conso.js", "irve.js", "bornes.js", "partage.js", "es.js", "lieux.js", "signalements.js",
+SCRIPTS = ["plan.js", "conso.js", "irve.js", "bornes.js", "partage.js", "es.js", "lieux.js", "signalements.js", "affichage.js",
            "ui/icones.js", "ui/feuilles.js", "ui/fond.js", "ui/assistant.js", "app.js"]
 # Service worker (appli installable, hors-ligne, 30/10/2026) : pwa/sw.js = regles pures (testees
 # en Node) + corps du worker, assembles ici en UN fichier et commites avec le manifeste et les

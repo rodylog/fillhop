@@ -160,14 +160,18 @@
            cursor:grab;touch-action:none;padding:8px 0 0}
   .poignee::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--line)}
   .poignee:focus-visible{outline-offset:-2px}
-  .panneau-tete{flex:none;display:flex;align-items:center;gap:4px;padding:0 8px 4px 16px;touch-action:none}
+  /* -4 px : le titre et les deux lignes de l'etat tiennent dans l'apercu de 6rem (la poignee
+     garde ses 44 px, l'en-tete mord sur son bas, vide). */
+  .panneau-tete{flex:none;display:flex;align-items:center;gap:4px;margin-top:-4px;padding:0 8px 4px 16px;touch-action:none}
   .panneau-titre{flex:1;min-width:0}
   .panneau-titre h2{line-height:1.3}
   #lieu{font-weight:450;color:var(--muted)}
-  .etat{margin:0;font-size:.78125rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Deux lignes au plus (une seule coupait le compteur et les alertes a 375 et 320 px). */
+  .etat{margin:0;font-size:.78125rem;line-height:1.3;color:var(--muted);overflow:hidden;
+        display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
   .etat .ko{color:var(--txt-rouge)}
   /* Panneau deplie : l'etat s'ecrit en entier (la troncature ne vaut que pour l'apercu de 96 px). */
-  .panneau:not([data-cran="apercu"]) .etat{white-space:normal}
+  .panneau:not([data-cran="apercu"]) .etat{display:block;-webkit-line-clamp:none;line-clamp:none}
   .panneau-corps{flex:1;min-height:0;overflow:auto;padding:0 16px calc(16px + var(--pad-bas));
                  overscroll-behavior:contain;scroll-padding-top:8px}
 
@@ -325,6 +329,9 @@
         border-color:#9aa3ad;line-height:1.25}
   .lbl2 span{white-space:nowrap;font-size:.71875rem;color:#fff;border-radius:8px;
              padding:1px 5px;text-align:center}
+  /* Vue large : station sans etiquette de prix (une autre est moins chere dans sa case) */
+  .lbl.pastille{width:18px;height:18px;padding:0;border-radius:50%;border-color:#555;color:#fff;display:grid;place-items:center}
+  .lbl.pastille .ico{width:12px;height:12px;margin:0}
   /* Station en rupture du carburant choisi : grise, sous les prix, hors classement */
   .lbl-ko{background:var(--ko-fond);border-color:var(--ko-fond);color:#fff;font-size:.6875rem;font-weight:600}
   .lbl-ko.pastille{width:18px;height:18px;padding:0;border-radius:50%;display:grid;place-items:center}
@@ -444,6 +451,12 @@
   .msg{margin:6px 0 0;font-size:.84375rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .msg:empty{display:none}
   .msg .btn{min-height:36px;padding:4px 10px}
+  /* Lien ou adresse a copier a la main (ni partage ni presse-papiers) : champ selectionne + « Copier » */
+  .a-copier{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0;font-size:.875rem}
+  .a-copier label{display:flex;flex:1 1 14em;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+  .a-copier input{flex:1 1 9em;min-width:0;min-height:44px;padding:6px 8px;border:1px solid var(--bord-champ);
+                  border-radius:var(--r2);background:var(--card);color:var(--ink);font:inherit}
+  .a-copier .note{margin:0}
   .erreur{color:var(--txt-rouge);font-size:.8125rem;margin:6px 0 0}
   .erreur:empty{display:none}
   #vcat{max-width:170px}
@@ -532,8 +545,8 @@
              box-shadow:none;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;
              transition:none;padding-top:8px}
     .poignee{display:none}
-    .panneau-tete{touch-action:auto}
-    .etat{white-space:normal}
+    .panneau-tete{touch-action:auto;margin-top:0}
+    .etat{display:block;-webkit-line-clamp:none;line-clamp:none}
     .reticule{left:400px}
     .reticule-actions{bottom:24px;left:auto;max-width:420px}
     .modale{left:50%;top:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);
@@ -549,7 +562,8 @@
   @media (pointer:coarse){
     .btn,.case,select,.champ input,#vnom,#conso,#cuve,#reserve,#autonomie,.tri button,.choix-item,#posQ,
     #asConso,#asCuve,#asReserve,#asPosQ,.as-cat,.msg .btn,.chips-kw button,.couloir-chips button,.filtres .case,.filtres select,
-    #vbatt,#vconsoKwh,#vkwdc,#vkwac,#vreservePct,#vdepartPct,#asConsoKwh,#asKwDc,#asKwAc,#asReservePct,#asDepartPct{min-height:44px}
+    #vbatt,#vconsoKwh,#vkwdc,#vkwac,#vreservePct,#vdepartPct,#asConsoKwh,#asKwDc,#asKwAc,#asReservePct,#asDepartPct,
+    #aBord,#aBordQkm,.fs-corr input{min-height:44px}
     .rond.petit{width:44px;height:44px}
     .fs-edit{min-width:44px;min-height:44px}
     .lt-vide,.couloir-chips input{min-height:44px}

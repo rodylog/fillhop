@@ -101,6 +101,18 @@ test('economiePositive : économie négative rougit, nulle ou non chiffrée pass
   assert.deepEqual(regle('economiePositive').verifier({plan, date: DATE}), []);
 });
 
+test('total du plan : 941 km comptés pour 965 annoncés -> manquement ; 0,4 % d\'écart ou trajet absent -> rien', () => {
+  const plan = planSain();
+  plan.trajet.km = 965.25; plan.trajet.total = 940.85;
+  const pb = regle('totalPlanDistance').verifier({plan, date: DATE});
+  assert.equal(pb.length, 1);
+  assert.match(pb[0], /940\.9 km pour un trajet annoncé de 965\.3 km \(écart 2\.5 %/);
+  plan.trajet.total = 965.25 * 1.004;
+  assert.deepEqual(regle('totalPlanDistance').verifier({plan, date: DATE}), []);
+  plan.trajet = null;
+  assert.deepEqual(regle('totalPlanDistance').verifier({plan, date: DATE}), []);
+});
+
 test('determinisme : deux plans égaux -> rien ; une différence est nommée par son chemin', () => {
   assert.deepEqual(determinisme(planSain(), planSain()), []);
   const b = planSain(); b.etapes[0].litres = 12;

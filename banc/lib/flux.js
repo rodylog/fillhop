@@ -1,7 +1,7 @@
 // Emulation MINIMALE du flux instantane des prix (data.economie.gouv.fr, API Explore v2.1)
 // pour les fixtures SYNTHETIQUES : une liste de stations au format reel du flux (stations.json)
 // repond aux requetes de l'application comme le ferait l'API — clause where (in_bbox,
-// distance, « x_prix is not null », ruptures), select, limit, offset, total_count.
+// distance, « x_prix is not null », ruptures), select, order_by, limit, offset, total_count.
 // Les fixtures ENREGISTREES n'en ont pas besoin : leurs reponses sont rejouees telles quelles.
 'use strict';
 
@@ -54,6 +54,17 @@ function repondreFlux(stations, url){
   const select = (u.searchParams.get('select') || '').split(',').map(x => x.trim()).filter(Boolean);
   const limit = Math.max(0, +(u.searchParams.get('limit') || 10)), offset = Math.max(0, +(u.searchParams.get('offset') || 0));
   const lignes = stations.filter(garde);
+  // order_by=champ[ asc|desc],… comme l'API : valeurs nulles en dernier, ordre du fichier a egalite.
+  const ordre = (u.searchParams.get('order_by') || '').split(',').map(x => x.trim().split(/\s+/)).filter(x => x[0])
+    .map(([k, sens]) => ({k, s: /^desc$/i.test(sens || '') ? -1 : 1}));
+  if(ordre.length) lignes.sort((a, b) => {
+    for(const {k, s} of ordre){
+      const x = a[k], y = b[k];
+      if(x == null || y == null){ if(x == null && y == null) continue; return x == null ? 1 : -1; }
+      if(x !== y) return (x < y ? -1 : 1) * s;
+    }
+    return 0;
+  });
   const projeter = r => select.length ? Object.fromEntries(select.map(k => [k, r[k] === undefined ? null : r[k]])) : r;
   return {statut: 200, type: 'application/json; charset=utf-8',
           corps: JSON.stringify({total_count: lignes.length, results: lignes.slice(offset, offset + limit).map(projeter)})};

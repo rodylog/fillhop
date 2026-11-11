@@ -10,7 +10,7 @@ const LBL = Object.fromEntries(FUELS);
 const SP = [["e10","E10"],["sp95","SP95"],["sp98","SP98"]];
 // Cases a cocher : cumulables. Coche par defaut = E85 (bioethanol).
 const CASES = [["e85","E85"],["e10","E10"],["sp95","SP95"],["sp98","SP98"],
-               ["spmin","SP le - cher"],["gazole","Gazole"],["gplc","GPLc"]];
+               ["spmin","SP le moins cher"],["gazole","Gazole"],["gplc","GPLc"]];
 const DEFAUT = ["e85"];
 // Type de vehicule (icone du chip, table de conso) ; la categorie (v.cat) affine l'estimation.
 const TYPES = {voiture: 'Voiture', utilitaire: 'Utilitaire', moto: 'Scooter / moto', campingcar: 'Camping-car'};
@@ -146,7 +146,7 @@ function majChip(){
   $('chipNom').textContent = v.nom;
   const elec = v.energie === 'elec';
   const c = elec ? [`électrique${+v.batterieKwh > 0 ? ` · ${String(v.batterieKwh).replace('.', ',')} kWh` : ''} · ${LIBELLE_PRISE[v.prise] || 'CCS'}`]
-                 : (v.carbs || []).map(k => k === 'spmin' ? 'SP le - cher' : (COURT[k] || k));
+                 : (v.carbs || []).map(k => k === 'spmin' ? 'SP le moins cher' : (COURT[k] || k));
   $('chipCarb').textContent = c.length ? c.join(' + ') : 'aucun carburant';
   $('chipVeh').setAttribute('aria-label', `Garage — ${v.nom}, ${c.join(' + ') || 'aucun carburant'}`);
   // Formulaire du trajet : « Réservoir au départ » n'a pas de sens pour une batterie (l'etat de
@@ -324,7 +324,7 @@ const hhmm = t => new Date(t).toLocaleTimeString('fr-FR', {hour: '2-digit', minu
 const ruptureTxt = s => [
   ...FUELS.filter(([k]) => s.corr && s.corr[k] && s.corr[k].vide).map(([k]) => `${COURT[k]} signalé vide par vous à ${hhmm(s.corr[k].t)}`),
   ...FUELS.filter(([k]) => s.depuis[k]).map(([k]) => `${COURT[k]} depuis le ${dateFr(s.depuis[k])}`)
-].join(', ') || s.rupture;
+].join(', ') || listeFr(s.rupture);
 const aSignalement = s => !!s.corr && Object.values(s.corr).some(c => c.vide);
 
 // Selection multiple : une station n'est retenue que si elle sert TOUS les
@@ -431,7 +431,11 @@ function bornes(sel){
   return {med: Q(0.50), p90: Q(0.90)};
 }
 
-const sansCherLbl = () => $('sansCher').checked
+// aRef : le secteur est connu pour au moins un des carburants affiches (bornes() non nul). Sans
+// lui (referentiel en echec, pas encore arrive, ou aucun repere), rien n'est rouge ni masque :
+// le compteur ne doit pas dire le contraire (releve du 11/11/2026).
+const sansCherLbl = aRef => !aRef ? 'prix du secteur non chargés : aucune station n\'est marquée trop chère'
+  : $('sansCher').checked
   ? 'les 10 % les plus chères du secteur sont masquées'
   : 'rouge = les 10 % les plus chères du secteur';
 
@@ -480,6 +484,16 @@ function empriseCalculee(){
   return {s: CENTRE[0] - dLat, n: CENTRE[0] + dLat, w: CENTRE[1] - dLon, e: CENTRE[1] + dLon};
 }
 const dansEmprise = (b, la, lo) => la >= b.s && la <= b.n && lo >= b.w && lo <= b.e;
+// Ce qui part vers le flux des prix ne porte jamais la position exacte (releve du 11/11/2026 :
+// l'emprise de la carte est centree sur l'appareil, et le secteur des couleurs sur le repere, a
+// cinq decimales ; le service worker rangeait ces URL telles quelles dans son cache). Toute
+// emprise est elargie a la grille de 0,05° (≈ 5 km) avant d'etre demandee, et le centre du
+// secteur est le noeud de grille le plus proche : la requete designe un carreau, pas un point.
+// L'affichage, lui, reste borne a la vue (renduCarburant).
+const GRILLE = 20;   // carreaux par degre : 0,05°
+const empriseGrille = z => ({s: Math.floor(z.s * GRILLE) / GRILLE, w: Math.floor(z.w * GRILLE) / GRILLE,
+                             n: Math.ceil(z.n * GRILLE) / GRILLE, e: Math.ceil(z.e * GRILLE) / GRILLE});
+const surGrille = x => (Math.round(x * GRILLE) / GRILLE).toFixed(2);
 
 // Point d'acces de test (banc/) : dernier plan calcule par rendu(), en donnees, dans
 // window.__viaminus_plan, et le meme objet dans l'evenement viaminus:plan. Inerte pour
@@ -487,6 +501,22 @@ const dansEmprise = (b, la, lo) => la >= b.s && la <= b.n && lo >= b.w && lo <= 
 function publierPlan(p){
   try{ window.__viaminus_plan = p; window.dispatchEvent(new CustomEvent('viaminus:plan', {detail: p})); }
   catch(e){ /* sans effet */ }
+}
+
+// Memo des calculs du plan (releve du 11/11/2026 : sept appels a optimiserPlan par rendu, a
+// chaque deplacement de la carte, 306 ms a 791 candidates). Un resultat est garde sous une cle
+// faite de TOUT ce dont il depend : les candidates (station, km, ecart, prix et date de chaque
+// carburant, prix fige) et les nombres passes au calcul (autonomie, total, conso, reservoir au
+// depart, prix du depart). Rien a invalider a la main : une donnee qui change change la cle.
+// Vide quand DATA est remplace (les resultats portent les objets station du chargement) et
+// au-dela de 60 entrees.
+let PLAN_MEMO = {data: null, m: new Map()};
+function memoPlan(nom, cand, nombres, calcul){
+  if(PLAN_MEMO.data !== DATA || PLAN_MEMO.m.size > 60) PLAN_MEMO = {data: DATA, m: new Map()};
+  const cle = nom + '|' + JSON.stringify(nombres) + '|' + cand.map(c =>
+    `${c.s.id},${c.km},${c.e},${c.risque},${c.fige ? c.fige.date + (c.fige.muette ? 'm' : '') : ''},${c.v.lignes.map(l => `${l.ref}:${l.prix}:${l.maj}`).join('/')}`).join(';');
+  if(!PLAN_MEMO.m.has(cle)) PLAN_MEMO.m.set(cle, calcul());
+  return PLAN_MEMO.m.get(cle);
 }
 
 // ---------- Rendu : marqueurs, liste en cartes, bloc plan ----------
@@ -506,6 +536,35 @@ function renduCarburant(){
     return;
   }
 
+  // Trajet pose, stations du couloir encore en route : etat d'attente, aucun verdict ni plan
+  // publie (ils porteraient sur les stations de l'ancienne vue).
+  // Meme ecran quand aucune emprise du couloir n'a repondu et qu'aucune station n'est en memoire :
+  // « infaisable » serait un verdict sur une panne.
+  const panne = ROUTE && !COULOIR_EN_CHARGEMENT && FLUX.panne && !DATA.length;
+  if(ROUTE && (COULOIR_EN_CHARGEMENT || panne)){
+    const attente = panne ? (navigator.onLine === false ? 'Hors ligne : aucun prix en mémoire pour ce trajet, le plan n\'est pas calculé.'
+                                                        : 'Prix indisponibles (le service ne répond pas) : le plan n\'est pas calculé.')
+                          : 'Recherche des stations du trajet…';
+    majCompte = () => {};
+    $('compte').textContent = ''; majEtat();
+    liste.innerHTML = `<li class="vide">${attente}</li>`;
+    $('blocPlan').hidden = false;
+    if(TRAJET){
+      $('planTrajet').textContent = `${TRAJET.dep} ${TRAJET.ar ? '⇄' : '→'} ${TRAJET.arr}`;
+      $('planMeta').textContent = `${Math.round(TRAJET.km)} km · ${duree(TRAJET.min)}`;
+    }
+    const p = document.createElement('div');
+    p.className = 'heros-etat' + (panne ? ' ko' : '');
+    p.append(Object.assign(document.createElement('b'), {textContent: attente}));
+    if(panne && navigator.onLine !== false){
+      const b = Object.assign(document.createElement('button'), {type: 'button', className: 'btn', textContent: 'Réessayer', onclick: charger});
+      p.append(' ', b);
+    }
+    $('plan').replaceChildren(p);
+    if($('planEtat').textContent !== attente) $('planEtat').textContent = attente;
+    return;
+  }
+
   // En itineraire, le couloir est deja charge en entier : le zoom se contente de
   // filtrer l'affichage, ce qui est instantane et ne perd aucune station.
   let source = DATA;
@@ -514,6 +573,11 @@ function renduCarburant(){
     const vue = emprise();
     DATA.forEach(s => { if(s.ecart == null) situerSurTrace(s); });
     source = DATA.filter(s => s.ecart != null && s.ecart <= large && dansEmprise(vue, s.la, s.lo));
+  }else{
+    // L'emprise demandee deborde de la vue (grille de 0,05°, voir empriseGrille) : seules les
+    // stations de la zone affichee sont listees et comptees, comme le dit le compteur.
+    const vue = emprise();
+    source = DATA.filter(s => dansEmprise(vue, s.la, s.lo));
   }
   const list = source.map(s => ({s, v: pick(s, sel)})).filter(o => o.v);
   const n = list.length;
@@ -521,7 +585,7 @@ function renduCarburant(){
   // toucher = fiche avec la date de debut. Dessinees avant les prix, qui restent dessus.
   const servies = new Set(list.map(o => o.s.id)), ks = kosVoulus(sel), seuil = seuilRupture();
   const large = +$('couloir').value, vue = emprise();
-  const dansVue = s => !ROUTE || (s.ecart != null && s.ecart <= large && dansEmprise(vue, s.la, s.lo));
+  const dansVue = s => dansEmprise(vue, s.la, s.lo) && (!ROUTE || (s.ecart != null && s.ecart <= large));
   const koVu = new Set();
   const koDe = (s, k) => recente(s, k, seuil) || signaleVide(s, k);
   const enRupture = [...RUPTURES, ...DATA.filter(s => ks.some(k => signaleVide(s, k)))]
@@ -579,21 +643,30 @@ function renduCarburant(){
   // Dessin des etiquettes de prix, appele une fois connue la liste REELLEMENT affichee
   // (voir plus bas) : mn = prix minimum par carburant parmi ces seules stations.
   // Les plus cheres dessinees en premier : les etiquettes utiles restent dessus.
+  // Vue large (zoom < ZOOM_COMPACT, la France entiere) : seule la moins chere de chaque case de
+  // grille garde son prix (etiquettesParCase, src/affichage.js) ; les autres sont des pastilles
+  // de couleur, dessinees dessous, qui ouvrent la meme fiche. Avant le 11/11/2026 : jusqu'a
+  // 400 etiquettes superposees.
   const dessinerMarqueurs = (liste, mn) => { if(!CARTE) return;
-    [...liste].sort((a,b) => b.v.p - a.v.p).forEach(o => {
+    const avecPrix = etiquettesParCase(liste.map(o => ({la: o.s.la, lo: o.s.lo, p: o.v.p})), map ? map.getZoom() : ZOOM_COMPACT);
+    const mnTot = Math.min(...liste.map(o => o.v.p));
+    liste.map((o, i) => ({o, prix: avecPrix[i]})).sort((a,b) => (a.prix - b.prix) || (b.o.v.p - a.o.v.p)).forEach(({o, prix}) => {
       const {s,v} = o;
       const chips = v.lignes.map((l,j) => { const c = couleur(l.prix, refs[j], mn[j]);
-        return `<span style="background:${c}">${marqueHtml(c)}${l.tag} ${l.prix.toFixed(3)}</span>`; }).join('');
+        return `<span style="background:${c}">${marqueHtml(c)}${l.tag} ${prixFr(l.prix)}</span>`; }).join('');
       const c0 = couleur(v.lignes[0].prix, refs[0], mn[0]);
-      const html = multi
+      const cPastille = multi ? couleur(v.p, refTotal, mnTot) : c0;
+      const html = !prix
+        ? `<div class="lbl pastille" style="background:${cPastille}">${marqueHtml(cPastille)}</div>`
+        : multi
         ? `<div class="lbl lbl2">${chips}</div>`
         : `<div class="lbl" style="background:${c0};`+
-          `border-color:#555;color:#fff">${marqueHtml(c0)}${v.lignes[0].prix.toFixed(3)}`+
+          `border-color:#555;color:#fff">${marqueHtml(c0)}${prixFr(v.lignes[0].prix)}`+
           (sel[0]==='spmin' ? ` <span style="font-size:.625rem;opacity:.85">${v.lignes[0].tag}</span>` : '')+
           `</div>`;
       const el = document.createElement('button');
       el.type = 'button'; el.className = 'marqueur'; el.tabIndex = -1;
-      el.setAttribute('aria-label', `${brut(s.ville)} — ${v.lignes.map(l => `${l.tag} ${l.prix.toFixed(3)} €`).join(', ')}`);
+      el.setAttribute('aria-label', `${brut(s.ville)} — ${v.lignes.map(l => `${l.tag} ${prixFr(l.prix)} €`).join(', ')}`);
       el.innerHTML = html; el.dataset.id = s.id;
       el.addEventListener('click', e => { e.stopPropagation(); ouvrirStation(o, el); });
       MARQUEURS.push(CARTE.marqueur(s.la, s.lo, el));
@@ -654,8 +727,8 @@ function renduCarburant(){
       const b = el('button', cls, icone ? svg(icone) : null, icone ? ' ' : null, libelle);
       b.type = 'button'; b.onclick = action; return b;
     };
-    const euros = x => x.toFixed(2).replace('.', ',') + ' €';
-    const litre = x => x.toFixed(3).replace('.', ',') + ' €/L';
+    const euros = x => eurosFr(x) + ' €';
+    const litre = x => prixFr(x) + ' €/L';
     const virg = x => String(x).replace('.', ',');
     const ouvrirGarage = champ => { appliquerVeh(); ouvrirFeuille('garage', $('chipVeh')); if(champ) $(champ).focus(); };
     const heros = [];
@@ -710,23 +783,26 @@ function renduCarburant(){
       // inchange. Si, sans elles, aucun plan ne passe avec ce detour alors qu'avec elles si, le plan
       // se recalcule avec elles et le dit (evitementLeve) ; infaisable des deux cotes : l'ecran
       // « infaisable » habituel, calcule sans elles.
+      // Tous les calculs du plan de ce rendu passent par le memo : un rendu sans donnee nouvelle
+      // (deplacement de la carte) n'en refait aucun.
+      const planDe = (c, opts) => memoPlan('plan', c, [A, total, lkm, opts], () => optimiserPlan(c, A, total, lkm, opts));
       const tSig = Date.now();
       const sigVide = c => c.v.lignes.some(l => aEviter(sigEtat(c.s), l.ref, tSig));
       const evitees = eviterVidesActif() ? candComplet.filter(sigVide) : [];
       let candTous = candComplet, evitementLeve = false;
       if(evitees.length){
         const sans = candComplet.filter(c => !sigVide(c));
-        const sansPlan = optimiserPlan(sans.filter(c => c.e <= larg), A, total, lkm, optsDe(sans)).plan;
-        if(sansPlan === null && optimiserPlan(candComplet.filter(c => c.e <= larg), A, total, lkm, optsDe(candComplet)).plan !== null) evitementLeve = true;
+        const sansPlan = planDe(sans.filter(c => c.e <= larg), optsDe(sans)).plan;
+        if(sansPlan === null && planDe(candComplet.filter(c => c.e <= larg), optsDe(candComplet)).plan !== null) evitementLeve = true;
         else candTous = sans;
       }
       const cand = candTous.filter(c => c.e <= larg);
       const optsPlan = optsDe(candTous);
-      const r = optimiserPlan(cand, A, total, lkm, Object.assign({utiles: true}, optsPlan));
+      const r = planDe(cand, Object.assign({utiles: true}, optsPlan));
       const plan = r.plan;
       utilesPlan = r.utiles || null;
       const voyage = coutVoyage(cand, r, total, lkm);
-      const eco = economieVsPlusCher(cand, A, total, lkm, voyage, optsBord);        // vs le plus cher du couloir
+      const eco = memoPlan('eco', cand, [A, total, lkm, voyage, optsBord], () => economieVsPlusCher(cand, A, total, lkm, voyage, optsBord));   // vs le plus cher du couloir
       const notrePrix = prixMoyen(r, lkm, g0);                                         // €/L reellement paye
       // Temps perdu : ~5 min par arret + le detour parcouru a ~50 km/h.
       const minutes = e => 5 + (2 * e.e) / 50 * 60;
@@ -754,7 +830,7 @@ function renduCarburant(){
       // detours ne retient que les faisables, puis les utiles.
       const largeurs = [1, 2, 5, 10, 20].map(w => {
         const cw = candTous.filter(c => c.e <= w);
-        const rw = optimiserPlan(cw, A, total, lkm, optsPlan);
+        const rw = w === larg ? r : planDe(cw, optsPlan);   // la largeur courante est deja calculee (r)
         const v = coutVoyage(cw, rw, total, lkm);
         const ok = rw.plan != null && v != null;
         return {w, ok, v: ok ? v : null, achats: ok ? rw.coutAchats : null, arrets: ok ? rw.plan.length : null,
@@ -806,7 +882,7 @@ function renduCarburant(){
         e.className = 'etape-rond' + (plein ? ' plein' : ''); e.title = titre;
         MARQUEURS.push(CARTE.marqueur(s.la, s.lo, e));
       };
-      (plan || []).forEach((e,i) => rond(e.s, `Étape ${i+1} — km ${Math.round(e.km)}`, false));
+      (plan || []).forEach((e,i) => rond(e.s, `Arrêt ${i+1} — km ${Math.round(e.km)}`, false));
       [[depart, 'Plein au départ'], [pleinArrivee, 'Plein à l\'arrivée']].forEach(([o, t]) => {
         if(o) rond(o.s, `${t} — km ${Math.round(o.km)}`, true);
       });
@@ -825,14 +901,14 @@ function renduCarburant(){
                     : `${cuve} L × ${virg(conso)} L/100`;
       const rappel = el('p', 'heros-rappel',
         `≈ ${Math.round(A)} km utiles (${origine}, réserve ${resv} km) · plan sur ${carbPlan === 'spmin' ? 'SP le moins cher' : (COURT[carbPlan] || 'SP')}` +
-        (aBord != null ? ` · réservoir au départ ≈ ${Math.round(aBord)} km${aBordL ? ` (${aBordBrut} L)` : ''}, compté au prix du départ` : '') +
-        (voyage == null ? '' : aBord != null ? '' : depart ? ' · plein de départ compris' : ' · plein de départ compté au prix de la première étape (aucune station à 15 km)'));
+        (aBord != null ? ` · réservoir au départ ≈ ${Math.round(aBord)} km${aBordL ? ` (${virg(aBordBrut)} L)` : ''}, compté au prix du départ` : '') +
+        (voyage == null ? '' : aBord != null ? '' : depart ? ' · plein de départ compris' : ' · plein de départ compté au prix du premier arrêt (aucune station à 15 km)'));
       // Ligne de temps : <ol>, un repere par item (lecteur d'ecran : liste ordonnee).
       const item = (cls, pt, titre, lignes, station) => {
         const li = el('li', cls);
         const p = el('span', 'lt-pt' + (pt.plein ? ' plein' : '') + (pt.pause ? ' pause' : ''), pt.txt || '');
         p.setAttribute('aria-hidden', 'true');
-        const txt = el('div', 'lt-txt', el('b', null, titre));
+        const txt = el('div', 'lt-txt', el('b', null, ...(Array.isArray(titre) ? titre : [titre])));   // titre : texte, ou texte et noeuds
         (lignes || []).filter(Boolean).forEach(l => txt.append(el('span', 'lt-ligne', ...(Array.isArray(l) ? l : [l]))));
         li.append(p, txt);
         if(station){
@@ -843,6 +919,14 @@ function renduCarburant(){
         return li;
       };
       const nomVille = s => brut(s.ville) + (s.pays ? ` (${brut(s.pays)})` : '');
+      // Le meme nom pour l'ecran : le nom de lieu espagnol, seul, porte lang="es" (comme la liste
+      // et la fiche, langES) — sinon « La Jonquera » est lu en francais. A deployer : ...nomVilleEl(s).
+      const nomVilleEl = s => {
+        if(!s.pays) return [nomVille(s)];
+        const nom = el('span', null, brut(s.ville));
+        nom.lang = 'es';
+        return [nom, ` (${brut(s.pays)})`];
+      };
       // Date du prix (des 1 jour ; rouge a 4 jours, comme la fiche), alerte « prix fige », et
       // secours : si la pompe est vide, la station la plus proche atteignable avec ce qui reste
       // (route ~ 1,3 x vol d'oiseau), prix figes evites ; « Pompe vide ? » refait le plan sans elle.
@@ -876,6 +960,14 @@ function renduCarburant(){
         return el('p', 'heros-note', svg('info'),
           ` ${n} station${n > 1 ? 's' : ''} écartée${n > 1 ? 's' : ''} du plan : pompe signalée vide par d'autres utilisateurs il y a moins de ${SIG_FENETRE_H} h (${liste}) — option « Éviter les pompes signalées vides ».`);
       };
+      // Ce que le chargement n'a pas rapporte, dit dans la carte du plan (la ligne d'etat est
+      // tronquee sur telephone) : emprises du couloir restees sans reponse.
+      const noteFlux = () => !FLUX.zonesKo ? null : el('p', 'heros-note ko', svg('alerte'),
+        ` ${FLUX.zonesKo} zone${FLUX.zonesKo > 1 ? 's' : ''} du trajet ${FLUX.zonesKo > 1 ? 'n\'ont' : 'n\'a'} pas répondu : le plan est calculé sans ${FLUX.zonesKo > 1 ? 'leurs' : 'ses'} stations — « Réessayer » dans la ligne d'état.`);
+      // Plafond atteint sur une emprise du couloir : le plan est calcule sans les stations non chargees.
+      const noteTronque = () => !tronque ? null : el('p', 'heros-note', svg('info'), TRONQUE_TRIE
+        ? ` ${tronque} station${tronque > 1 ? 's' : ''} plus chère${tronque > 1 ? 's' : ''} autour du trajet ${tronque > 1 ? 'n\'ont' : 'n\'a'} pas été chargée${tronque > 1 ? 's' : ''} (plafond de ${PLAFOND} par zone) : le plan garde les moins chères de chaque zone.`
+        : ` ${tronque} station${tronque > 1 ? 's' : ''} autour du trajet ${tronque > 1 ? 'n\'ont' : 'n\'a'} pas été chargée${tronque > 1 ? 's' : ''} (plafond de ${PLAFOND} par zone, sans tri par prix possible pour « SP le moins cher ») : le plan peut en ignorer de moins chères.`);
       const repli = (c, portee) => {
         let best = null;
         candTous.forEach(x => {
@@ -893,7 +985,7 @@ function renduCarburant(){
         const r = repli(c, portee);
         if(!r) return [b, ' si c\'est vide : aucune autre station à portée'];
         const adr = brut(r.x.s.adresse).slice(0, 34);
-        return [b, ` si c'est vide : ${nomVille(r.x.s)}${adr ? `, ${adr}` : ''} à ≈ ${r.d < 1 ? '1' : Math.round(r.d)} km · `, ...chipPrix(r.x)];
+        return [b, ' si c\'est vide : ', ...nomVilleEl(r.x.s), `${adr ? `, ${adr}` : ''} à ≈ ${r.d < 1 ? '1' : Math.round(r.d)} km · `, ...chipPrix(r.x)];
       };
       // Carburant a bord a un km donne, reserve comprise : ce qu'on a au depart puis, apres
       // chaque arret, ce qui y etait en arrivant + ce qui y a ete achete (« juste » ou plein).
@@ -904,20 +996,20 @@ function renduCarburant(){
       };
       const ligneTemps = () => {
         const ol = el('ol', 'ligne-temps');
-        ol.setAttribute('aria-label', 'Étapes du plan');
-        ol.append(item('lt-depart', {plein: true, txt: ''}, aBord != null ? `Départ · réservoir ≈ ${Math.round(aBord)} km${aBordL ? ` (${aBordBrut} L)` : ''}` : 'Départ · plein',
+        ol.setAttribute('aria-label', 'Arrêts du plan');
+        ol.append(item('lt-depart', {plein: true, txt: ''}, aBord != null ? `Départ · réservoir ≈ ${Math.round(aBord)} km${aBordL ? ` (${virg(aBordBrut)} L)` : ''}` : 'Départ · plein',
           aBord != null ? [] :
-          depart ? [[nomVille(depart.s), ' · km ', String(Math.round(depart.km)), ' · ', ...chipPrix(depart), datePrix(depart)],
+          depart ? [[...nomVilleEl(depart.s), ' · km ', String(Math.round(depart.km)), ' · ', ...chipPrix(depart), datePrix(depart)],
                     alerteFige(depart, 'depart'), alerteSig(depart), secours(depart, 30)]
                  : ['aucune station à moins de 15 km du départ avec ce détour — partez le réservoir plein'],
           aBord == null && depart ? depart.s : null));
         const etapes = plan || [];
         const ajouterEtapes = (de, a) => etapes.forEach((e, i) => {
           if(e.km < de || e.km >= a) return;
-          ol.append(item('lt-etape', {txt: String(i + 1)}, `Étape ${i + 1} — ${nomVille(e.s)}`,
+          ol.append(item('lt-etape', {txt: String(i + 1)}, [`Arrêt ${i + 1} — `, ...nomVilleEl(e.s)],
             [[`km ${Math.round(e.km)} · `, ...chipPrix(e), datePrix(e)],
              `${e.plein ? 'le plein' : 'juste ce qu\'il faut'} : ≈ ${Math.round(e.litres)} L (${euros(e.p * lkm * e.q)}) · à bord en arrivant ≈ ${Math.round(e.arrivee + reserve)} km`,
-             `détour ${(2 * e.e).toFixed(1).replace('.', ',')} km (+${euros(2 * e.e * lkm * e.p)}) · ≈ ${Math.round(minutes(e))} min`,
+             `détour ${kmFr(2 * e.e)} km (+${euros(2 * e.e * lkm * e.p)}) · ≈ ${Math.round(minutes(e))} min`,
              alerteFige(e, 'etape'), alerteSig(e), secours(e, e.arrivee + reserve)],
             e.s));
         });
@@ -933,7 +1025,7 @@ function renduCarburant(){
           ol.append(item('lt-arrivee', {plein: true, txt: ''}, `Arrivée — ${TRAJET ? TRAJET.arr : 'arrivée'}`,
             [`km ${Math.round(total)} · autonomie restante ≈ ${restante(total)} km`]));
           ol.append(item('lt-retour', {pause: true, txt: ''}, 'Retour — plein conseillé à l\'arrivée',
-            pleinArrivee ? [[nomVille(pleinArrivee.s), ' · km ', String(Math.round(pleinArrivee.km)), ' · ', ...chipPrix(pleinArrivee), datePrix(pleinArrivee)],
+            pleinArrivee ? [[...nomVilleEl(pleinArrivee.s), ' · km ', String(Math.round(pleinArrivee.km)), ' · ', ...chipPrix(pleinArrivee), datePrix(pleinArrivee)],
                             alerteFige(pleinArrivee, 'arrivee'), alerteSig(pleinArrivee)]
                          : ['aucune station à moins de 15 km de l\'arrivée avec ce détour'],
             pleinArrivee ? pleinArrivee.s : null));
@@ -997,7 +1089,7 @@ function renduCarburant(){
 
       // Reservoir presque vide : la reserve est entamee jusqu'a la premiere etape, l'ecran le dit.
       if(r.reserveEntamee != null) heros.push(el('div', 'heros-etat', svg('alerte'), ' ', el('b', null, 'Réserve entamée'),
-        ` — il vous reste ${Math.round(aBord)} km : vous entamez la réserve jusqu'à ${nomVille(plan[0].s)} (km ${Math.round(plan[0].km)}) ; vous y arrivez avec ≈ ${Math.round(plan[0].arrivee + reserve)} km.`));
+        ` — il vous reste ${Math.round(aBord)} km : vous entamez la réserve jusqu'à `, ...nomVilleEl(plan[0].s), ` (km ${Math.round(plan[0].km)}) ; vous y arrivez avec ≈ ${Math.round(plan[0].arrivee + reserve)} km.`));
       // Infaisable parce que rien n'est a portee de ce qui reste dans le reservoir, reserve comprise.
       const horsPortee = plan === null && aBord != null && !cand.some(c => c.km + c.e <= aBord);
       if(horsPortee){
@@ -1005,7 +1097,7 @@ function renduCarburant(){
         if(detours.length) actions.append(bouton('btn primaire', 'Accepter un détour', () => { DETOUR_AUTO = true; rendu(); }));
         heros.push(el('div', 'heros-etat ko', svg('alerte'), ' ', el('b', null, 'Aucune station à portée'),
           ` — il vous reste ${Math.round(aBord)} km : aucune station à portée, avec les stations à ${larg} km de la route au plus.`, actions));
-        heros.push(choixDetour(), rappel, noteEvitees());
+        heros.push(choixDetour(), rappel, noteEvitees(), noteFlux(), noteTronque());
         resume = `Plan de pleins : il vous reste ${Math.round(aBord)} km, aucune station à portée avec les stations à ${larg} km de la route au plus.`;
       }else if(plan === null){
         // Etat : infaisable — trois remedes cliquables.
@@ -1018,7 +1110,7 @@ function renduCarburant(){
         actions.append(bouton('btn', 'Revoir l\'autonomie', () => ouvrirGarage('autonomie'), 'garage'));
         heros.push(el('div', 'heros-etat ko', svg('alerte'), ' ', el('b', null, detours.length ? 'Trajet impossible sans détour' : 'Trajet infaisable avec cette autonomie'),
           ` — ${Math.round(A)} km utiles pour ${Math.round(total)} km : avec les stations à ${larg} km de la route au plus, aucune suite d'arrêts ne passe.`, actions));
-        heros.push(choixDetour(), rappel, noteEvitees());
+        heros.push(choixDetour(), rappel, noteEvitees(), noteFlux(), noteTronque());
         resume = `Plan de pleins : trajet infaisable avec ${Math.round(A)} km d'autonomie utile et les stations à ${larg} km de la route au plus.`;
       }else if(!plan.length){
         // Etat : aucun arret necessaire.
@@ -1026,18 +1118,18 @@ function renduCarburant(){
           ` — ${Math.round(total)} km pour ${Math.round(g0)} km utiles${aBord != null ? ' dans le réservoir au départ : ce que vous avez suffit.' : ' : un plein au départ suffit.'}`));
         heros.push(chiffre());
         heros.push(el('p', 'heros-sous', '0 arrêt · ', ligneEco()));
-        heros.push(choixDetour(), rappel, noteEvitees(), ligneTemps());
+        heros.push(choixDetour(), rappel, noteEvitees(), noteFlux(), noteTronque(), ligneTemps());
         const lst = [...list].filter(o => moinsCheres.has(o.s)).sort((a,b) => a.v.p - b.v.p || a.s.ecart - b.s.ecart);
         if(lst.length){
           const ul = el('ul', 'liste-min');
-          lst.forEach(o => ul.append(el('li', null, el('b', null, nomVille(o.s)), ` km ${Math.round(o.s.kmr)}, détour ${(2 * o.s.ecart).toFixed(1).replace('.', ',')} km · `, ...chipPrix(o))));
+          lst.forEach(o => ul.append(el('li', null, el('b', null, ...nomVilleEl(o.s)), ` km ${Math.round(o.s.kmr)}, détour ${kmFr(2 * o.s.ecart)} km · `, ...chipPrix(o))));
           heros.push(el('p', 'heros-rappel', 'Pour un plein en route, les moins chères du trajet dans la zone affichée :'), ul);
         }
         resume = `Plan de pleins : aucun arrêt nécessaire${voyage != null ? `, carburant du voyage ${euros(voyage)}` : ''}.`;
       }else{
         heros.push(chiffre());
         heros.push(el('p', 'heros-sous', `${plan.length} arrêt${plan.length > 1 ? 's' : ''} · ≈ ${Math.round(tempsTotal)} min · `, ligneEco()));
-        heros.push(choixDetour(), rappel, noteEvitees(), ligneTemps());
+        heros.push(choixDetour(), rappel, noteEvitees(), noteFlux(), noteTronque(), ligneTemps());
         resume = `Plan de pleins : ${plan.length} arrêt${plan.length > 1 ? 's' : ''}${voyage != null ? `, carburant du voyage ${euros(voyage)}` : ''}` +
                  (eco && Math.abs(eco.economie) >= 0.05 ? `, ${eco.economie > 0 ? 'économie' : 'surcoût'} de ${euros(Math.abs(eco.economie))} par rapport au plus cher du trajet` : '') + '.';
       }
@@ -1110,27 +1202,27 @@ function renduCarburant(){
   const miniTotAff = Math.min(...tri.map(o => o.v.p));
   chipsPrix.forEach(([sp, prix, j]) => marquerPrix(sp, couleur(prix, refs[j], minisAff[j])));
   $('echelle').textContent =
-    `— vert = la moins chère affichée, ex æquo compris ; ${sansCherLbl()} · ` +
-    sel.map((k,i) => `${k==='spmin'?'SP':COURT[k]} ${minisAff[i].toFixed(3)}` +
-                     (refs[i] ? ` / ${refs[i].p90.toFixed(3)}` : '')).join(' · ') + ' €';
+    `— vert = la moins chère affichée, ex æquo compris ; ${sansCherLbl(!!refTotal || refs.some(Boolean))} · ` +
+    sel.map((k,i) => `${k==='spmin'?'SP':COURT[k]} ${prixFr(minisAff[i])}` +
+                     (refs[i] ? ` / ${prixFr(refs[i].p90)}` : '')).join(' · ') + ' €';
   dessinerMarqueurs(tri, minisAff);
   tri.forEach((o, i) => {
     const {s, v} = o;
     const chips = v.lignes.map((l,j) => { const c = couleur(l.prix, refs[j], minisAff[j]);
-      return `<span class="pill" style="background:${c}">${marqueHtml(c)}${l.tag} ${l.prix.toFixed(3)}</span>`; }).join('');
+      return `<span class="pill" style="background:${c}">${marqueHtml(c)}${l.tag} ${prixFr(l.prix)}</span>`; }).join('');
     const cTot = couleur(v.p, refTotal, miniTotAff);
     const prix = (multi
-      ? `<span class="pill" style="background:${cTot}">${marqueHtml(cTot)}${v.p.toFixed(3)} €</span>` : '') + chips;
+      ? `<span class="pill" style="background:${cTot}">${marqueHtml(cTot)}${prixFr(v.p)} €</span>` : '') + chips;
     const et = etapesStation.get(s), mc = moinsCheres.has(s), ex = extremites.get(s);
     const badges = (ex ? `<span class="badge">${ico('pompe')} ${ex}</span> ` : '') +
-      (et ? `<span class="badge">${ico('pompe')} Étape${et.length > 1 ? 's' : ''} ${et.join(' · ')}</span> ` : mc ? `<span class="badge badge-min">Moins chère</span> ` : '') +
+      (et ? `<span class="badge">${ico('pompe')} Arrêt${et.length > 1 ? 's' : ''} ${et.join(' · ')}</span> ` : mc ? `<span class="badge badge-min">Moins chère</span> ` : '') +
       sigBadge(s, v.lignes.map(l => l.ref));
     const li = document.createElement('li');
     li.innerHTML = `<button type="button" class="carte${et || mc || ex ? ' etape' : ''}" aria-haspopup="dialog">`+
       `<span class="ville">${badges}${badgePays(s)}${langES(s, s.ville)} <span class="cp">${s.cp}</span></span>`+
       `<span class="prix">${prix}</span>`+
       `<span class="adr">${s.enseigne ? `${langES(s, s.enseigne)} · ` : ''}${langES(s, s.adresse)}${s.auto ? ' · 24/24' : s.horario ? ` · ${resumerHorario(s.horario)}` : ''}</span>`+
-      `<span class="meta"><span>${(ROUTE ? s.ecart : s.d).toFixed(1)} km${ROUTE ? ' du trajet' : ''}</span>`+
+      `<span class="meta"><span>${kmFr(ROUTE ? s.ecart : s.d)} km${ROUTE ? ' du trajet' : ''}</span>`+
       (ROUTE && s.kmr != null ? `<span>km ${Math.round(s.kmr)}</span>` : '')+
       `<span>relevé ${jour(v.maj)}</span></span></button>`;
     const b = li.firstChild;
@@ -1195,7 +1287,7 @@ function ouvrirStation(o, origine){
   $('fsInfos').innerHTML =
     (s.auto ? `<span>${ico('horloge')} automate 24 h/24</span>`
      : s.horario ? `<span>${ico('horloge')} ${resumerHorario(s.horario)}${ouvert === true ? ' · ouvert en ce moment' : ouvert === false ? ' · <b class="ferme">fermé à cette heure</b>' : ''}</span>` : '') +
-    `<span>${ico('epingle')} ${ROUTE && s.ecart != null ? `${s.ecart.toFixed(1)} km du trajet · km ${Math.round(s.kmr)}` : `${s.d.toFixed(1)} km du repère`}</span>` +
+    `<span>${ico('epingle')} ${ROUTE && s.ecart != null ? `${kmFr(s.ecart)} km du trajet · km ${Math.round(s.kmr)}` : `${kmFr(s.d)} km du repère`}</span>` +
     (s.rupture || aSignalement(s) ? `<span class="ko-lbl">${ico('alerte')} rupture : ${ruptureTxt(s)}</span>` : '') +
     (s.pays === 'ES' ? `<span>${ico('info')} Espagne : prix du fichier du ministère${majES ? ` du ${quand(majES).txt}` : ''} (une date pour toutes les stations)</span>` : '');
   // Chaque carburant : « Corriger » ouvre, sous la ligne, le prix vu a la pompe, « Pompe vide »
@@ -1208,7 +1300,7 @@ function ouvrirStation(o, origine){
                : c && c.prix != null ? ' <span class="corr-lbl">(corrigé)</span>' : '';
     return `<li class="${utilises.includes(k) ? 'hi' : ''}${ko ? ' ko' : ''}"><span>${l}${etat}</span>`+
            `<span class="dt${q.vieux ? ' vieux' : ''}">${c && c.prix != null ? `vu à ${hhmm(c.t)}` : q.txt}</span>`+
-           `<b>${s.prix[k].toFixed(3)} €</b>`+
+           `<b>${prixFr(s.prix[k])} €</b>`+
            `<button type="button" class="fs-edit" data-k="${k}" aria-label="Corriger : ${l}">${ico('crayon')}</button>`+
            sigLigne(s, k, l) + `</li>`;
   }).join('') || '<li>Aucun prix déclaré.</li>';
@@ -1247,7 +1339,7 @@ $('fsCopier').onclick = async () => {
   if(!STATION) return;
   const txt = brut(`${STATION.adresse}, ${STATION.cp} ${STATION.ville}`);
   try{ await navigator.clipboard.writeText(txt); majEtat('adresse copiée'); }
-  catch(e){ prompt('Copiez l\'adresse :', txt); }
+  catch(e){ montrerACopier($('fsCopier').closest('.actions'), 'Copiez cette adresse', txt); }
 };
 
 // « Y aller » : choix de l'application memorise au premier usage. Defaut Android =
@@ -1418,7 +1510,35 @@ const lienBase = () => location.href.split('#')[0];
 // Format du lien : src/partage.js (historique Nom|carburants|conso|cuve|reserve|autonomie, plus un
 // 7e champ E… pour un vehicule electrique ; un lien ancien reste lu).
 const vehParam = v => vehVersParam(v);
-async function partagerLien(url, texte, elMsg){
+// Repli sans partage ni presse-papiers (navigateurs integres aux applications, contexte non
+// securise) : le texte s'ecrit sous les boutons de la feuille en cours, dans un champ en
+// lecture seule deja selectionne ; « Copier » retente par la selection, sinon l'appui long du
+// telephone suffit. Avant le 11/11/2026 : prompt(), absent ou muet dans ces navigateurs.
+const retirerACopier = () => document.querySelectorAll('.a-copier').forEach(x => x.remove());
+function montrerACopier(ancre, libelle, texte){
+  retirerACopier();
+  const box = document.createElement('div'); box.className = 'a-copier';
+  const lab = document.createElement('label'); lab.textContent = libelle + ' ';
+  const inp = document.createElement('input'); inp.type = 'text'; inp.readOnly = true; inp.value = texte;
+  const selectionner = () => { inp.focus({preventScroll: true}); inp.select(); inp.setSelectionRange(0, texte.length); };
+  inp.onfocus = () => inp.select();
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'Copier';
+  const note = document.createElement('span'); note.className = 'note'; note.setAttribute('role', 'status');
+  b.onclick = () => {
+    selectionner();
+    let ok = false;
+    try{ ok = document.execCommand('copy'); }catch(e){ /* copie refusee : la selection reste */ }
+    note.textContent = ok ? 'Copié' : 'Sélectionné : copiez-le par un appui long';
+  };
+  lab.append(inp); box.append(lab, b, note);
+  ancre.after(box);
+  box.scrollIntoView({block: 'nearest'});
+  selectionner();
+}
+// Le champ ne survit ni a la feuille qui le porte ni au trajet dont il donne le lien.
+document.addEventListener('feuille', e => { if(!e.detail.ouverte) retirerACopier(); });
+$('trajet').addEventListener('submit', retirerACopier);
+async function partagerLien(url, texte, elMsg, ancre){
   if(navigator.share){
     try{ await navigator.share({title: 'ViaMinus', text: texte, url}); return; }
     catch(e){ if(e && e.name === 'AbortError') return; }
@@ -1427,16 +1547,16 @@ async function partagerLien(url, texte, elMsg){
     await navigator.clipboard.writeText(url);
     majEtat('lien copié');
     if(elMsg){ elMsg.textContent = 'Lien copié'; setTimeout(() => { if(elMsg.textContent === 'Lien copié') elMsg.textContent = ''; }, 4000); }
-  }catch(e){ prompt('Copiez le lien :', url); }
+  }catch(e){ montrerACopier(ancre, 'Copiez ce lien', url); }
 }
 $('vehPartager').onclick = () => {
   reglagesEcrits();
   const v = REGL.vehicules[REGL.vehActif];
-  partagerLien(`${lienBase()}#veh=${vehParam(v)}`, `Fiche véhicule ${v.nom} — ViaMinus`, $('garageMsg'));
+  partagerLien(`${lienBase()}#veh=${vehParam(v)}`, `Fiche véhicule ${v.nom} — ViaMinus`, $('garageMsg'), $('vehPartager').closest('.actions'));
 };
 $('partagerPlan').onclick = () => {
   if(!ROUTE || !TRAJET) return;
-  partagerLien(lienTrajet(), `Plan de pleins ${TRAJET.dep} ${TRAJET.ar ? '⇄' : '→'} ${TRAJET.arr} — ViaMinus`);
+  partagerLien(lienTrajet(), `Plan de pleins ${TRAJET.dep} ${TRAJET.ar ? '⇄' : '→'} ${TRAJET.arr} — ViaMinus`, null, $('partagerPlan').closest('.bloc-plan-pied'));
 };
 
 // Import par l'URL — sert aussi a PARTAGER :
@@ -1501,8 +1621,12 @@ const SEL = encodeURIComponent("__SELECT__");
 const URL_API = "__API__";
 const PLAFOND = 400;      // stations chargees au maximum pour une emprise donnee
 let tronque = 0, seq = 0, minuteur = null, majCompte = () => {};
-// Etat (region aria-live) : fraicheur des prix + compteur ; un message ponctuel
+// Etat (region aria-live) : compteur + fraicheur des prix ; un message ponctuel
 // (adresse copiee, position refusee) prend la place le temps de quelques secondes.
+// Au telephone, panneau replie, la ligne n'a que deux lignes de 200 a 255 px (app.css) : le
+// plus utile vient d'abord — le compteur en resume (« dans la zone affichée » reste dit en
+// entier au-dessus de la liste, #compte) et ses alertes (trop cheres masquees, plafond,
+// Espagne), puis la fraicheur. Avant le 11/11/2026 : une ligne, la date d'abord, le reste coupe.
 let etatPrix = 'chargement…', etatTempo = null;
 // Hors ligne (30/10/2026) : le service worker (pwa/sw.js) sert la derniere reponse en cache quand
 // le reseau se tait et la date par l'en-tete x-viaminus-date ; la page la note pour l'etat et le
@@ -1520,8 +1644,8 @@ function majEtat(ponctuel){
     clearTimeout(etatTempo); etatTempo = setTimeout(() => majEtat(), 4000);
     return;
   }
-  const c = $('compte').textContent;
-  el.innerHTML = etatPrix + (c ? ' · ' + esc(c) : '');
+  const c = $('compte').textContent.replace(/ (sur le trajet, )?dans la zone affichée/, (m, trajet) => trajet ? ' sur le trajet' : '');
+  el.innerHTML = (c ? esc(c) + ' · ' : '') + etatPrix;
 }
 
 // Les stations suivent l'emprise de la carte : chaque deplacement ou dezoom
@@ -1606,7 +1730,7 @@ function fusionnerES(fr, es, nZones){
   tronque += Math.max(0, tri.length - place);
   return fr.concat(tri.slice(0, place));
 }
-const etatES = () => ES_KO ? ' · <span class="ko">prix espagnols indisponibles</span>' : '';
+const etatES = () => ES_KO ? '<span class="ko">prix espagnols indisponibles</span> · ' : '';
 
 // ---------- Signalements partagés « pompe vide » (src/signalements.js, partie 2, 30/10/2026) ----------
 // Le flux officiel ne sait pas qu'une pompe est vide ; les personnes sur place, si (Lodeve, 26/10/2026).
@@ -1768,8 +1892,8 @@ async function chargerRuptures(zones, sel){
   const clause = ' and (' + ks.map(k =>
     `(${k}_rupture_type='temporaire' and ${k}_rupture_debut >= date'${seuil}')`).join(' or ') + ')';
   const lots = await Promise.all(zones.map(async z => {
-    const w = encodeURIComponent(`in_bbox(geom, ${z.s.toFixed(5)}, ${z.w.toFixed(5)}, ` +
-                                 `${z.n.toFixed(5)}, ${z.e.toFixed(5)})` + clause);
+    const w = encodeURIComponent(`in_bbox(geom, ${z.s.toFixed(2)}, ${z.w.toFixed(2)}, ` +
+                                 `${z.n.toFixed(2)}, ${z.e.toFixed(2)})` + clause);   // zones deja sur la grille (charger)
     const r = await fetch(`${URL_API}?where=${w}&select=${SEL_KO}&limit=100`, {signal: AbortSignal.timeout(20000)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     noterRepli(r);
@@ -1783,11 +1907,11 @@ async function chargerRuptures(zones, sel){
 // englobante couvre un quart de la France : le plafond tombait alors sur des
 // stations tirees au hasard par l'API et le couloir revenait presque vide
 // (constate sur un trajet de ~600 km, ~3 700 stations dans l'emprise).
-function emprisesTrace(margeKm){
+function emprisesDe(pts, margeKm){
   const dLat = margeKm/110.57;
   const cases = [];
   let cur = null;
-  for(const [lon, lat] of ROUTE){
+  for(const [lon, lat] of pts){
     const dLon = margeKm/(111.32*Math.cos(lat*Math.PI/180));
     if(!cur) cur = {s:lat, n:lat, w:lon, e:lon};
     const s2 = Math.min(cur.s,lat), n2 = Math.max(cur.n,lat);
@@ -1805,10 +1929,81 @@ function emprisesTrace(margeKm){
   }
   return cases;
 }
+// Emprises du couloir. En aller-retour, ROUTE porte l'aller puis le retour, qui suit la meme
+// route a quelques centaines de metres pres : les emprises de l'aller le couvrent deja, et les
+// redemander doublait les requetes (releve du 11/11/2026). Seuls les points du retour dont le
+// voisinage sort des emprises de l'aller en ajoutent (retour par une autre route). Voisinage
+// teste a 90 % de la marge, en neuf points : les marges en longitude de deux emprises voisines
+// different de quelques centaines de metres, qui ne doivent pas faire redemander une zone.
+function emprisesTrace(margeKm){
+  if(I_RETOUR == null) return emprisesDe(ROUTE, margeKm);
+  const zones = emprisesDe(ROUTE.slice(0, I_RETOUR), margeKm);
+  const dLat = 0.9 * margeKm/110.57, pas = [-1, 0, 1];
+  const couvert = ([lon, lat]) => {
+    const dLon = 0.9 * margeKm/(111.32*Math.cos(lat*Math.PI/180));
+    return pas.every(i => pas.every(j => zones.some(z => dansEmprise(z, lat + i*dLat, lon + j*dLon))));
+  };
+  const hors = ROUTE.slice(I_RETOUR).filter(p => !couvert(p));
+  return hors.length ? zones.concat(emprisesDe(hors, margeKm)) : zones;
+}
 
+// Stations d'une emprise : la premiere page donne le total, les suivantes partent ensemble,
+// jusqu'au plafond. Rend {rows, reste} (reste = stations au-dela du plafond, non chargees).
+// ordre : « &order_by=… » ou '' (voir ordreCouloir) — decide lesquelles restent au-dela du plafond.
+async function chargerZone(z, clause, ordre){
+  const bbox = encodeURIComponent(
+    `in_bbox(geom, ${z.s.toFixed(2)}, ${z.w.toFixed(2)}, ` +
+    `${z.n.toFixed(2)}, ${z.e.toFixed(2)})` + clause);
+  const lire = async (off, delai) => {
+    const r = await fetch(`${URL_API}?where=${bbox}&select=${SEL}&limit=100&offset=${off}${ordre}`, {signal: AbortSignal.timeout(delai)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    noterRepli(r);
+    return r.json();
+  };
+  // Une page en erreur (HTTP 4xx ou 5xx, delai depasse) est redemandee une fois, apres une
+  // demi-seconde et avec un delai plus court ; hors ligne declare, l'essai serait vain.
+  const page = off => lire(off, 20000).catch(async e => {
+    if(navigator.onLine === false) throw e;
+    await new Promise(ok => setTimeout(ok, 500));
+    return lire(off, 10000);
+  });
+  const j0 = await page(0), tot = j0.total_count, offs = [];
+  for(let off = 100; off < tot && off < PLAFOND; off += 100) offs.push(off);
+  const suite = await Promise.all(offs.map(page));
+  return {rows: j0.results.concat(...suite.map(j => j.results)), reste: Math.max(0, tot - Math.min(tot, PLAFOND))};
+}
+// Execute les taches (fonctions asynchrones) par `n` a la fois ; resultats dans l'ordre des taches.
+async function parLots(taches, n){
+  const res = new Array(taches.length);
+  let i = 0;
+  const ouvrier = async () => { while(i < taches.length){ const k = i++; res[k] = await taches[k](); } };
+  await Promise.all(Array.from({length: Math.min(n, taches.length)}, ouvrier));
+  return res;
+}
+// En itineraire, les emprises sont demandees par prix croissant du carburant du plan (le premier
+// coche), l'identifiant departageant les ex aequo : quand le plafond tronque, ce sont les plus
+// cheres de l'emprise qui manquent, plus un tirage arbitraire de l'API (releve du 11/11/2026 :
+// 351 stations ecartees au hasard sur Montpellier → Lille). « SP le moins cher » n'est pas une
+// colonne du flux, qui ne trie pas sur une expression : pas de tri, et la carte du plan le dit.
+const ordreCouloir = () => { const k = choix()[0]; return ROUTE && k && k !== 'spmin' ? `&order_by=${encodeURIComponent(k + '_prix,id')}` : ''; };
+let TRONQUE_TRIE = false;    // les stations au-dela du plafond sont les plus cheres de leur emprise
+const ZONES_A_LA_FOIS = 4;   // emprises du couloir interrogees en meme temps (releve du 11/11/2026 : 28 requetes en serie, 7,5 s)
+
+// Issue du dernier chargement du flux francais : zonesKo = emprises du couloir restees sans
+// reponse apres le second essai (les autres sont gardees) ; panne = aucune emprise n'a repondu.
+let FLUX = {zonesKo: 0, panne: false};
+const BOUTON_REESSAYER = '<button type="button" class="btn" data-reessayer>Réessayer</button>';
+$('etat').addEventListener('click', e => { if(e.target.closest('[data-reessayer]')) charger(); });
+
+// Leve par calculerTrajet des que le nouveau trace est pose, baisse par charger() quand les
+// stations du couloir sont la (ou que le chargement a echoue) : entre les deux, renduCarburant
+// n'affiche ni liste ni plan — ils seraient calcules sur les stations de l'ancienne vue
+// (releve du 11/11/2026 : « Trajet infaisable » pendant 6 s sous « chargement… »).
+let COULOIR_EN_CHARGEMENT = false;
 async function charger(){
   const mien = ++seq;
   if(estElec()){
+    COULOIR_EN_CHARGEMENT = false;
     // Vehicule electrique (phase 2) : aucun prix carburant a charger, les bornes remplacent les
     // stations (chargerBornes, par departement) ; la liste et le plan se redessinent a leur arrivee.
     DATA = []; RUPTURES = []; tronque = 0;
@@ -1819,8 +2014,8 @@ async function charger(){
   }
   // Hors itineraire : l'emprise de l'ecran (validee, voir emprise()). En itineraire :
   // une suite d'emprises courtes le long du trace, pour ne rien manquer sur un long trajet.
-  const zones = ROUTE ? emprisesTrace(20)   // toujours le couloir maxi : la largeur
-                      : [emprise()];
+  const zones = (ROUTE ? emprisesTrace(20)   // toujours le couloir maxi : la largeur
+                       : [emprise()]).map(empriseGrille);   // jamais d'emprise centree sur l'appareil (voir empriseGrille)
   // choisie filtre localement, et le comparatif par largeur se fait sans recharger.
   const clause = clauseVue();
   // Accessoire et en parallele : une panne ici ne bloque jamais les prix.
@@ -1830,25 +2025,20 @@ async function charger(){
   const es = chargerES(zones).catch(() => { ES_KO = true; return []; });
   etatPrix = 'chargement…'; majEtat();
   try{
-    let rows = [], reste = 0;
-    for(const z of zones){
-      const bbox = encodeURIComponent(
-        `in_bbox(geom, ${z.s.toFixed(5)}, ${z.w.toFixed(5)}, ` +
-        `${z.n.toFixed(5)}, ${z.e.toFixed(5)})` + clause);
-      let off = 0, tot = 1;
-      while(off < tot && off < PLAFOND){
-        const r = await fetch(`${URL_API}?where=${bbox}&select=${SEL}&limit=100&offset=${off}`, {signal: AbortSignal.timeout(20000)});
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        noterRepli(r);
-        const j = await r.json();
-        if(mien !== seq) return;
-        tot = j.total_count; rows = rows.concat(j.results); off += 100;
-      }
-      reste += Math.max(0, tot - Math.min(tot, PLAFOND));
-    }
+    // Emprises en parallele (ZONES_A_LA_FOIS), assemblees dans l'ordre du trace comme avant.
+    // Une emprise en echec n'emporte plus les autres (releve du 11/11/2026 : une page en erreur
+    // sur 28 jetait tout le couloir) : seules les emprises sans reponse manquent, et l'etat le dit.
+    const ordre = ordreCouloir();
+    const issues = await parLots(zones.map(z => () => chargerZone(z, clause, ordre).catch(() => null)), ZONES_A_LA_FOIS);
+    if(mien !== seq) return;
+    const lots = issues.filter(Boolean), zonesKo = issues.length - lots.length;
+    if(!lots.length) throw new Error('flux des prix sans réponse');
+    FLUX = {zonesKo, panne: false};
+    let rows = lots.flatMap(l => l.rows);
+    const reste = lots.reduce((t, l) => t + l.reste, 0);
     const vus = new Set();
     rows = rows.filter(r => !vus.has(r.id) && vus.add(r.id));   // emprises jointives
-    tronque = reste;
+    tronque = reste; TRONQUE_TRIE = !!ordre;
     const esStations = await es;
     if(mien !== seq) return;
     DATA = fusionnerES(normalise(rows), esStations, zones.length);
@@ -1858,13 +2048,14 @@ async function charger(){
     RUPTURES = ROUTE ? kos.filter(situerSurTrace) : kos;
     const repli = quandRepli();
     if(repli){   // au moins une reponse vient du cache du service worker : prix d'une date passee
-      etatPrix = '<span class="ko">hors ligne</span> — prix du ' + esc(repli) + etatES();
+      etatPrix = etatES() + '<span class="ko">hors ligne</span> — prix du ' + esc(repli);
       montrerHorsLigne('Hors ligne — prix du ' + repli);
     }else{
-      etatPrix = 'prix en direct · ' + new Date().toLocaleString('fr-FR',
-        {weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) + etatES();
+      etatPrix = etatES() + 'prix en direct · ' + new Date().toLocaleString('fr-FR',
+        {weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       cacherHorsLigne();
     }
+    if(zonesKo) etatPrix += ` · <span class="ko">${zonesKo} zone${zonesKo > 1 ? 's' : ''} du trajet sans réponse</span> — ${BOUTON_REESSAYER}`;
   }catch(e){
     if(mien !== seq) return;
     const vis = emprise();
@@ -1874,9 +2065,17 @@ async function charger(){
     if(mien !== seq) return;
     DATA = fusionnerES(normalise(SNAPSHOT).filter(s => dansEmprise(vis, s.la, s.lo)), esStations, zones.length);
     RUPTURES = [];
-    etatPrix = '<span class="ko">hors ligne</span> — relevé du ' + SNAP_DATE + etatES();
+    FLUX = {zonesKo: 0, panne: true};
+    // « hors ligne » seulement si l'appareil l'est ; en ligne, c'est le service qui ne repond pas,
+    // et un nouvel essai est propose. La date du snapshot n'est citee que s'il porte des stations
+    // (page generee sans snapshot, ou flux en panne a la generation : il est vide).
+    const releve = SNAPSHOT.length ? ' — relevé du ' + SNAP_DATE : '';
+    etatPrix = etatES() + (navigator.onLine === false
+      ? '<span class="ko">hors ligne</span>' + (releve || ' — aucun prix en mémoire')
+      : '<span class="ko">prix indisponibles</span> (le service ne répond pas)' + releve + ' — ' + BOUTON_REESSAYER);
     if(navigator.onLine === false) montrerHorsLigne('Hors ligne — aucun prix récent en mémoire pour cette zone');
   }
+  COULOIR_EN_CHARGEMENT = false;
   chargerSignalements(DATA, mien);   // agregats « pompe vide » : redessine a leur arrivee (si l'emprise n'a pas change)
   rendu();
   chargerBornes();   // vehicule thermique : seulement si l'option « Afficher les bornes » est cochee
@@ -1926,7 +2125,8 @@ function situer(lat, lon, libelle, explicite){
   chargerReferentiel().then(rendu).catch(() => {});   // le secteur suit le nouveau centre
   // Le titre suit la position (nom de commune via la Base Adresse Nationale) :
   // la page peut etre partagee, la commune du snapshot ne doit pas rester figee.
-  fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${lon}&lat=${lat}`)
+  // Seul le nom de la commune est lu : le point part arrondi a 0,01° (≈ 1 km), pas a pleine precision.
+  fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${lon.toFixed(2)}&lat=${lat.toFixed(2)}`)
     .then(r => r.json())
     .then(j => {
       const c = j.features?.[0]?.properties?.city;
@@ -2097,8 +2297,11 @@ async function geocoder(q){
 // Distance d'un point au trace, en km (approximation plane : a cette echelle
 // l'erreur est negligeable devant la largeur du couloir).
 let KMS = null;   // abscisse cumulee (km) de chaque point du trace
-function preparerKms(){
-  KMS = kmsCumules(ROUTE);   // irve.js : meme approximation plane (111,32 km x cos(lat) / 110,57 km)
+// sens = [{fin, km}] : dernier point et distance annoncee par le service d'itineraire, pour
+// l'aller puis le retour ; les abscisses sont calees dessus (calerKms, irve.js) : le plan compte
+// les memes kilometres que l'en-tete du trajet.
+function preparerKms(sens){
+  KMS = calerKms(kmsCumules(ROUTE), sens);   // irve.js : meme approximation plane (111,32 km x cos(lat) / 110,57 km)
   ROUTE_N++;                  // les bornes en cache se resituent sur ce nouveau trace (voir renduElec)
 }
 
@@ -2209,6 +2412,8 @@ function rechercheOuverte(on){
   if($('recherche').classList.contains('ouvert') === on) return;
   $('recherche').classList.toggle('ouvert', on);
   $('pilule').setAttribute('aria-expanded', String(on));
+  // Bouton « retour » du telephone : il replie le formulaire avant de quitter (ui/feuilles.js).
+  if(on) retourOuvert(); else retourFerme();
   if(on){
     if(!$('depart').value) $('depart').value = 'Ma position';
     if(MOBILE.matches) poserCran('apercu');   // la feuille laisse la place aux champs
@@ -2420,7 +2625,11 @@ async function calculerTrajet(ev){
     let pts = aller.pts, iRetour = null;
     if(retour){ iRetour = pts.length; pts = pts.concat(retour.pts); }
     ROUTE = pts; I_RETOUR = iRetour; ROUTE_AR = !!retour;
-    preparerKms();
+    // Les stations en memoire sont celles de l'ancienne vue : aucun plan n'est calcule dessus,
+    // l'ecran attend celles du couloir (charger(), plus bas).
+    DATA = []; RUPTURES = []; COULOIR_EN_CHARGEMENT = true;
+    preparerKms(retour ? [{fin: iRetour - 1, km: aller.distance / 1000}, {fin: pts.length - 1, km: retour.distance / 1000}]
+                       : [{fin: pts.length - 1, km: aller.distance / 1000}]);
     ALLER_KM = iRetour != null ? KMS[iRetour] : null;
     DETOUR_AUTO = !sansGeste;   // lien partage : on garde son detour
     // En-tete du plan : le libelle geocode quand il differe de la saisie (lieux.js).
@@ -2769,7 +2978,7 @@ function renduBornes(elec, etapes){
     const prix = mk('span', 'prix', mk('span', 'kw ' + cls, mkSvg('eclair'), ' ', libellePuissance(b.kw)),
                     b.pdc > 1 ? mk('span', 'cp', `${b.pdc} points`) : null);
     const adr = mk('span', 'adr', [b.op ? brut(b.op) : null, libellePrises(b), libellePaiement(b)].filter(Boolean).join(' · '));
-    const meta = mk('span', 'meta', mk('span', null, ROUTE ? `${b.ecart.toFixed(1)} km du trajet` : `${b.d.toFixed(1)} km`),
+    const meta = mk('span', 'meta', mk('span', null, ROUTE ? `${kmFr(b.ecart)} km du trajet` : `${kmFr(b.d)} km`),
                     ROUTE && b.kmr != null ? mk('span', null, `km ${Math.round(b.kmr)}`) : null,
                     mk('span', null, libelleHoraires(b.h)), mk('span', maj.ancien ? 'ancien' : null, maj.ancien ? 'donnée ancienne' : maj.txt));
     bt.append(ville, prix, adr, meta);
@@ -2812,7 +3021,7 @@ function ouvrirBorne(b, origine){
   $('fbTitre').textContent = brut(b.n);
   $('fbOperateur').textContent = b.op ? brut(b.op) : 'opérateur non renseigné';
   $('fbInfos').replaceChildren(
-    mk('span', null, mkSvg('epingle'), ' ', ROUTE && b.ecart != null ? `${b.ecart.toFixed(1)} km du trajet · km ${Math.round(b.kmr)}` : `${d.toFixed(1)} km du repère`),
+    mk('span', null, mkSvg('epingle'), ' ', ROUTE && b.ecart != null ? `${kmFr(b.ecart)} km du trajet · km ${Math.round(b.kmr)}` : `${kmFr(d)} km du repère`),
     mk('span', null, mkSvg('eclair'), ' ', `${b.pdc} point${b.pdc > 1 ? 's' : ''} de charge`));
   const ouvert = ouvertA(brut(b.h || ''), new Date());
   const ligne = (icone, ...txt) => mk('li', null, mkSvg(icone), mk('span', null, ...txt));
@@ -2923,7 +3132,7 @@ function renduElec(){
         const ajouter = (de, a) => r.arrets.forEach((e, i) => {
           if(e.kmDepuisDepart < de || e.kmDepuisDepart >= a) return;
           ol.append(item('lt-etape', {txt: String(i + 1), elec: true}, `Arrêt ${i + 1} — ${brut(e.station.n)}`,
-            [[`km ${Math.round(e.kmDepuisDepart)} · `, kwb(e.kw), e.detourKm > 0.05 ? ` · détour ${virgule((2 * e.detourKm).toFixed(1))} km` : ''],
+            [[`km ${Math.round(e.kmDepuisDepart)} · `, kwb(e.kw), e.detourKm > 0.05 ? ` · détour ${kmFr(2 * e.detourKm)} km` : ''],
              `+${Math.round(e.kwhCharges)} kWh en ≈ ${Math.round(e.minutes)} min · ${pctTxt(e.pctArrivee)} → ${pctTxt(e.pctDepart)}`,
              e.station.op ? `${brut(e.station.op)} · ${libellePaiement(e.station)} · ${brut(libelleHoraires(e.station.h))}` : `${libellePaiement(e.station)} · ${brut(libelleHoraires(e.station.h))}`],
             e.station));
@@ -2994,19 +3203,32 @@ majFonds();
 
 // Le referentiel (60 km) part en parallele du premier chargement : la carte
 // s'affiche sans l'attendre, puis se recolore des qu'il arrive.
+// Deux appels peuvent se chevaucher (repere memorise au demarrage, puis geolocalisation) et
+// chacun enchaine jusqu'a six pages : seul le DERNIER lance ecrit REF_ROWS (REF_N), sinon le
+// plus lent gagnait et les couleurs portaient sur l'ancien secteur. Echec du dernier appel :
+// REF_ROWS vide — plus de rouge ni de masque, et le compteur le dit (sansCherLbl). Sans repere
+// reel (centre de la France), aucun secteur n'est demande.
+let REF_N = 0;
 async function chargerReferentiel(){
+  const mien = ++REF_N;
+  if(!REPERE_REEL){ REF_ROWS = []; return; }
   const w = encodeURIComponent(
-    `distance(geom, geom'POINT(${CENTRE[1]} ${CENTRE[0]})', 60km)`);   // secteur courant
-  let rows=[], off=0, tot=1;
-  while(off < tot && off < 600){
-    const r = await fetch(`${URL_API}?where=${w}&select=${SEL}&limit=100&offset=${off}`, {signal: AbortSignal.timeout(20000)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const j = await r.json();
-    tot = j.total_count; rows = rows.concat(j.results); off += 100;
+    `distance(geom, geom'POINT(${surGrille(CENTRE[1])} ${surGrille(CENTRE[0])})', 60km)`);   // secteur courant, centre sur la grille (jamais le repere exact)
+  try{
+    let rows=[], off=0, tot=1;
+    while(off < tot && off < 600){
+      const r = await fetch(`${URL_API}?where=${w}&select=${SEL}&limit=100&offset=${off}`, {signal: AbortSignal.timeout(20000)});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j = await r.json();
+      if(mien !== REF_N) return;   // un secteur plus recent est demande : celui-ci n'ecrit rien
+      tot = j.total_count; rows = rows.concat(j.results); off += 100;
+    }
+    REF_ROWS = normalise(rows);
+  }catch(e){
+    if(mien === REF_N) REF_ROWS = [];
   }
-  REF_ROWS = normalise(rows);
 }
-chargerReferentiel().then(rendu).catch(() => {});
+if(REPERE_REEL) chargerReferentiel().then(rendu).catch(() => {});
 // Trajet importe (#trajet=) : calcule tout de suite si le depart est une adresse, sinon
 // une fois la geolocalisation repondue (acceptee ou non : le repere memorise sert alors).
 function lancerTrajetImporte(){
