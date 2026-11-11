@@ -14,8 +14,11 @@
 // - data/irve/*.json = cache d'abord, rafraichi en arriere-plan (40 fichiers, 60 jours).
 // - API espagnole = reseau d'abord, repli cache (exactement la meme province) ; 20 entrees, 7 jours.
 // - tuiles, styles, glyphes, itineraires, geocodage, et tout le reste = jamais en cache ('reseau').
-// Aucune donnee personnelle n'y passe : ni la position (jamais envoyee a ces API : les emprises
-// sont des rectangles de carte), ni le garage (localStorage, hors de portee du worker).
+// Aucune donnee personnelle n'y passe : ni la position — la page ne demande au flux des prix que
+// des emprises elargies a la grille de 0,05° et un secteur centre sur un noeud de cette grille
+// (app.js, empriseGrille) ; par precaution la cle de cache d'une requete de secteur
+// (« distance(geom, POINT…) ») ne porte aucune coordonnee (clePrix) —, ni le garage
+// (localStorage, hors de portee du worker).
 'use strict';
 
 const PREFIXE_CACHE = 'viaminus-';
@@ -51,6 +54,18 @@ function urlPage(scope, p){
   return scope + nom;
 }
 
+// Cle de cache d'une requete au flux des prix : son URL, sauf pour le secteur des couleurs
+// (« distance(geom, geom'POINT(lon lat)', 60km) »), range sous une cle SANS coordonnees — le
+// point vient du repere de l'utilisateur, il n'a rien a faire dans le cache. Hors ligne, le
+// dernier secteur connu repond donc, ou qu'on soit.
+function clePrix(u){
+  const w = u.searchParams.get('where');
+  if(w == null || !/POINT\s*\(/i.test(w)) return u.href;
+  const c = new URL(u.href);
+  c.searchParams.set('where', w.replace(/POINT\s*\([^)]*\)/gi, 'POINT(secteur)'));
+  return c.href;
+}
+
 // Decision pour une requete : {type, cle?, reseauDabord?}.
 // type : 'coquille' | 'prix' | 'es' | 'irve' | 'reseau' (= ne pas intercepter).
 // ctx : {scope: URL du scope du worker (se termine par /), cache: mode cache de la requete}.
@@ -72,7 +87,7 @@ function decider(urlStr, ctx){
     const mode = String((ctx && ctx.cache) || '');
     return {type: 'coquille', cle, reseauDabord: /^(no-cache|no-store|reload)$/.test(mode)};
   }
-  if(u.hostname === HOTE_PRIX) return {type: 'prix', cle: u.href};
+  if(u.hostname === HOTE_PRIX) return {type: 'prix', cle: clePrix(u)};
   if(u.hostname === HOTE_ES) return {type: 'es', cle: u.href};
   return {type: 'reseau'};
 }
@@ -127,7 +142,7 @@ function choisirRepli(entrees, url, limite, options){
 // Export Node (tests) ; dans le worker, `module` n'existe pas et ces fonctions sont globales.
 if(typeof module !== 'undefined' && module.exports)
   module.exports = {PREFIXE_CACHE, CACHE_PRIX, CACHE_ES, CACHE_IRVE, LIMITES, HOTE_PRIX, HOTE_ES, ENTETE_DATE,
-                    nomCacheCoquille, buildDepuisHtml, urlPage, decider, cachesAPurger, entreesAPurger,
+                    nomCacheCoquille, buildDepuisHtml, urlPage, clePrix, decider, cachesAPurger, entreesAPurger,
                     memeFamille, choisirRepli};
 
 // Service worker de ViaMinus (corps). pwa/sw.js = src/pwa-strategie.js (regles pures, testees)
