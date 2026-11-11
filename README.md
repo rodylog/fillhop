@@ -15,7 +15,12 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   même liste (tri par prix, badge `ES`, enseigne, horaires résumés), même carte, même fiche
   (« Y aller », ouvert / fermé à cette heure), plafond de 400 commun (annoncé quand ça
   tronque) et **même plan de pleins** (`src/plan.js` inchangé : un Perpignan → Barcelone fait
-  le plein du bon côté de la frontière). Source : API du ministère espagnol, interrogée
+  le plein du bon côté de la frontière). **Saisie d'un lieu espagnol** (11/11/2026) : les
+  géocodeurs de la page ne connaissent que la France ; les capitales des 47 provinces de la
+  péninsule et huit villes de la frontière (Figueres, La Jonquera, Portbou, Roses, Puigcerdà,
+  Vielha, Jaca, Irun) viennent d'une table embarquée (`villeES`, `src/es.js`), en français ou
+  en espagnol — tout autre lieu d'Espagne est refusé en clair (« lieu introuvable en France »),
+  voir « Limites connues ». Source des prix : API du ministère espagnol, interrogée
   **par province** (`FiltroProvincia/{id}`, quelques centaines de ko ; le fichier national
   pèse 12 Mo) à partir de la table `src/es-provincias.json` (52 provinces, boîtes
   englobantes calculées le 28/10/2026) : trois provinces à la fois au plus (au-delà,
@@ -55,7 +60,7 @@ dans **un seul fichier HTML** partageable — sans compte, sans serveur, sans tr
   voyage** en chiffre (plein de départ compris), « 2 arrêts · ≈ 14 min · votre
   prix 0,85 €/L · −11,40 € vs pleins au plus cher (1,05 €/L) » (référence = le
   même calcul sur les mêmes stations, tous les prix remplacés par le plus cher du
-  trajet — plus de médiane, Eric 24/10/2026), ligne de temps verticale
+  trajet — plus de médiane, demande du 24/10/2026), ligne de temps verticale
   (départ, étapes avec « Y aller », arrivée, retour), états dessinés (infaisable
   avec ses remèdes, aucun arrêt nécessaire, véhicule à compléter).
 - **Corrections sur place** (26/10/2026, Lodève : E85 annoncé par le flux officiel,
@@ -263,7 +268,8 @@ Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
 | `src/irve.js` | bornes de recharge : lecture des champs Etalab (`parseBool`, `parsePuissance`, `parseXY`), horaires (`ouvertA`), compatibilité véhicule / borne, filtres, couloir le long d'un trajet (`bornesSurTrajet`) ; pur, exporté pour Node |
 | `src/bornes.js` | bornes côté interface : `departementsPourEmprise(index, bbox)`, `classePuissance` (rapide / moyen / lent / inconnu), `libellePuissance`, `libelleHoraires`, `libelleMaj` (donnée ancienne > 365 j), `branchable`, `libellePrises`, `libellePaiement` ; pur, exporté pour Node |
 | `src/partage.js` | format `#veh=` : `vehVersParam` / `paramVersVeh`, format historique et 7ᵉ champ électrique, lien ancien toujours lu ; pur, exporté pour Node |
-| `src/es.js` | Espagne : `nombreES`, `normaliserStationES` (forme d'une station française), `ouvertA` / `resumerHorario` (horaires `L-S: 06:00-22:00; D: …`), `provincesPourEmprise` / `enEspagne` ; pur, exporté pour Node |
+| `src/es.js` | Espagne : `nombreES`, `normaliserStationES` (forme d'une station française), `ouvertA` / `resumerHorario` (horaires `L-S: 06:00-22:00; D: …`), `provincesPourEmprise` / `enEspagne`, `villeES` (table `ES_VILLES` des villes espagnoles saisissables comme départ ou arrivée) ; pur, exporté pour Node |
+| `src/lieux.js` | choix du lieu parmi les 5 réponses du géocodeur : `choisirLieu` (un nom seul vaut la commune de ce nom, jamais une voie homonyme ; une adresse garde le meilleur score ; rien sous 0,5 ; sinon refus), `libelleTrajet` (en-tête du plan) ; pur, exporté pour Node, testé sur des réponses réelles (`src/fixtures/geocodage-geopf.json`) |
 | `src/signalements.js` | signalements partagés « pompe vide » : `libelle` (badge), `aEviter` (seuil 1, fenêtre 12 h, un « ok » plus récent remet à zéro), `peutSignaler` / `delaiRestant` / `noterSignalement` (journal local, 6 h), `lotsIds` (paquets de 400) ; pur, exporté pour Node |
 | `src/es-provincias.json` | les 52 provinces : id → [nom, nb de stations, latMin, latMax, lonMin, lonMax], calculées le 28/10/2026 depuis le fichier complet ; inliné à la génération |
 | `src/fixtures/es-echantillon-girona.json` | réponse réelle `FiltroProvincia/17` tronquée à 3 stations (tests) |
@@ -284,11 +290,12 @@ Le gabarit vit dans `src/` et `generate.py` l'assemble en un seul fichier :
 | `outils/accessibilite/` | banc de mesure (hors build) : `axe.cjs`, `clavier.cjs`, `perf.cjs`, données factices `donnees.cjs`, page et états `banc.cjs` ; `npm install` puis `node axe.cjs <page.html> <dossier>` |
 
 Les scripts sont assemblés dans l'ordre de `SCRIPTS` (`generate.py`) en un seul
-`<script>` : `plan.js`, `conso.js`, `irve.js`, `bornes.js`, `partage.js`, `es.js`, `signalements.js`, `ui/*.js`, puis `app.js`.
+`<script>` : `plan.js`, `conso.js`, `irve.js`, `bornes.js`, `partage.js`, `es.js`, `lieux.js`, `signalements.js`, `ui/*.js`, puis `app.js`.
 
 ```bash
 node --test src/*.test.js                        # modules purs (Node ≥ 20)
 node --test src/*.test.js banc/*.test.js         # + banc de non-régression (Chromium headless, sans réseau)
+python3 generate_test.py                         # générateur : données inlinées, nombre de <script> (sans réseau)
 ```
 
 **Banc de non-régression « 10 trajets »** (`banc/`, 30/10/2026) : le banc manuel du 26/10 rejoué
@@ -494,6 +501,18 @@ option, évitement levé). Captures dans `recette/captures/`. Le service réel n
   l'équateur ; ces stations sont ignorées à l'ingestion (coordonnée à 0 ou hors de l'enveloppe
   latitude 27–44, longitude −19–5) et comptées (« n sans position ignorées »). Le snapshot de
   repli embarqué reste français.
+- Départ et arrivée (11/11/2026) : géocodage **français seulement** (Géoplateforme, api-adresse
+  en secours). Un nom seul vaut la commune de ce nom (la plus importante en cas d'homonymes :
+  « Valence » est celle de la Drôme) ; une voie ou un lieu-dit sans numéro n'est accepté que si
+  la saisie nomme aussi sa commune (« rue de la République Lyon ») ; sinon, et sous un score de
+  0,5, la saisie est refusée (« lieu introuvable en France ») au lieu d'être devinée : préciser
+  la commune ou le code postal. Espagne : 55 villes seulement (capitales de province de la
+  péninsule, frontière), coordonnées du centre-ville saisies à la main ; pas d'adresse
+  espagnole, pas d'îles ; les noms qui sont aussi des communes françaises (Valence, Grenade,
+  Cadix, Léon, Saint-Sébastien) ne désignent la ville espagnole que suivis de « Espagne ».
+  Aucun autre pays. « Ma position » exige une position réelle (localisation de l'appareil ou
+  repère posé, mémorisé ou non) : sans elle le calcul est refusé (« Position inconnue… »), il
+  ne part plus du centre de la France (`banc/depart-inconnu.test.js`).
 - Signalements partagés : des constats humains, sans vérification (un signalement vaut un avis,
   pas une mesure) ; 48 h de mémoire côté service, 12 h d'évitement dans le plan ; disponibles
   seulement si la page a été générée avec `--signalements-url` et servie depuis l'origine autorisée

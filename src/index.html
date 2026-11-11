@@ -45,10 +45,10 @@ __APP_CSS__
           <label class="champ"><span>Arrivée</span>
             <input id="arrivee" placeholder="Adresse, ville…" autocomplete="off"></label>
         </div>
-        <!-- Lieux recents (Eric, 26/10/2026) : proposes sous le champ actif, croix = effacer -->
+        <!-- Lieux recents (demande du 26/10/2026) : proposes sous le champ actif, croix = effacer -->
         <ul id="suggestions" class="suggestions" aria-label="Lieux récents" hidden></ul>
         <div class="ligne">
-          <!-- Couloir : plus de choix dans le formulaire (Eric, 26/10/2026) — le detour se choisit
+          <!-- Couloir : plus de choix dans le formulaire (demande du 26/10/2026) — le detour se choisit
                sur le resultat (« Faire un détour pour payer moins ? »). Le select reste, cache :
                source de verite du plan, des liens #trajet=…|couloir| et de la liste. -->
           <label class="ctl" hidden>Couloir
@@ -61,13 +61,13 @@ __APP_CSS__
             </select>
           </label>
           <label class="case"><input type="checkbox" id="sansPeage"> Sans péage</label>
-          <!-- Autonomie restante au depart (Eric, 24/10/2026), en km ou en litres : vide = on part le plein
+          <!-- Autonomie restante au depart (demande du 24/10/2026), en km ou en litres : vide = on part le plein
                fait ; sinon le plan peut faire le plein en route s'il y est moins cher qu'au depart. -->
           <label class="ctl" id="aBordLbl" title="Ce qu'il reste dans le réservoir au départ, en km ou en litres (vide : vous partez le plein fait)">Réservoir au départ
             <input id="aBord" type="number" min="0" step="1" inputmode="decimal" placeholder="plein" style="width:5.2em"
                    aria-label="Réservoir au départ, en km ou en litres ; vide : plein">
             <select id="aBordUnite" aria-label="Unité du réservoir au départ"><option value="km">km</option><option value="l">L</option></select></label>
-          <!-- Aller-retour : case retirée du formulaire le 24/10/2026 (Eric : « juste une double flèche
+          <!-- Aller-retour : case retirée du formulaire le 24/10/2026 (demande : « juste une double flèche
                pour inverser ») ; l'entrée reste, cachée, pour les liens #trajet=…|r et les trajets mémorisés. -->
           <input type="checkbox" id="allerRetour" hidden>
           <select id="trajetsMemo" class="ctl" aria-label="Trajets mémorisés" hidden></select>
@@ -109,6 +109,7 @@ __APP_CSS__
       <div class="panneau-titre">
         <h2 id="titreListe">Autour de vous<span id="lieu"></span></h2>
         <p id="etat" class="etat" role="status" aria-live="polite">chargement…</p>
+        <p id="lienMsg" class="erreur" role="status" aria-live="polite"></p>
       </div>
       <button class="rond petit" id="options" type="button" title="Options" aria-label="Options" aria-haspopup="dialog"><span data-ico="reglages"></span></button>
       <button class="rond petit" id="aideBtn" type="button" title="Comment ça marche" aria-label="Comment ça marche" aria-haspopup="dialog"><span data-ico="aide"></span></button>
@@ -458,7 +459,7 @@ __APP_CSS__
     </div>
   </section>
 
-  <!-- Question d'office au lancement d'un trajet (Eric, 24/10/2026) : combien de km reste-t-il au
+  <!-- Question d'office au lancement d'un trajet (demande du 24/10/2026) : combien de km reste-t-il au
        depart ? Valider remplit « Réservoir au départ » ; Passer = on part le plein fait. -->
   <section class="modale" id="aBordQ" role="dialog" aria-modal="true" aria-labelledby="aBordTitre" hidden>
     <div class="modale-tete"><h2 id="aBordTitre"><span data-ico="pompe"></span> Il vous reste combien dans le réservoir ?</h2>
@@ -518,7 +519,11 @@ __APP_CSS__
         stations suivent la zone affichée (400 au maximum ; au-delà, le compteur le signale).</li>
       <li><b>Espagne</b> : dès que la carte ou le trajet touche l'Espagne, les stations espagnoles (badge
         <span class="badge badge-pays">ES</span>, enseigne, horaires) s'ajoutent aux françaises — liste, carte, fiche et plan de
-        pleins : un Perpignan → Barcelone fait le plein du bon côté de la frontière. Prix du ministère espagnol,
+        pleins : un Perpignan → Barcelone fait le plein du bon côté de la frontière. En départ ou en arrivée, l'Espagne
+        se saisit par ses grandes villes seulement : les capitales de province de la péninsule (Barcelone, Gérone,
+        Saragosse, Madrid…) et la frontière (Figueres, La Jonquera, Portbou, Roses, Puigcerdà, Vielha, Jaca, Irun), en
+        français ou en espagnol ; ajoutez « Espagne » aux noms qui existent aussi en France (« Valence Espagne »).
+        Les autres lieux d'Espagne et les adresses espagnoles ne sont pas reconnus. Prix du ministère espagnol,
         chargés province par province (trois à la fois au plus : au-delà, zoomez), mis à jour toutes les 30 min ;
         la date affichée est celle du fichier, commune à toutes les stations. Gazole = Gasóleo A, SP95 = Gasolina 95 E5,
         SP98 = Gasolina 98 E5, E10 = Gasolina 95 E10, GPLc = GLP ; l'E85 n'existe presque pas en Espagne (2 stations
@@ -535,7 +540,8 @@ __APP_CSS__
         péage ; si l'IGN ne répond pas, tracé OpenStreetMap (Valhalla) et la ligne du trajet le dit. Seules les
         stations du détour choisi (voir « Faire un détour ? ») restent affichées. La
         flèche ⇄ échange départ et arrivée (trajet retour). Le départ est « Ma position » d'office (le toucher
-        le sélectionne, il suffit de taper pour le changer) ; les 8 derniers lieux saisis sont proposés sous les
+        le sélectionne, il suffit de taper pour le changer) ; sans localisation autorisée ni repère posé, la position
+        est inconnue : saisissez l'adresse de départ. Les 8 derniers lieux saisis sont proposés sous les
         champs, la croix en efface un — gardés dans ce navigateur seulement.</li>
       <li><b>Plan de pleins</b> : avec la conso et l'autonomie d'un plein (ou le réservoir) de la fiche véhicule, la
         page dit où faire le plein — plein au départ, arrêts choisis au moins cher parmi les stations atteignables

@@ -19,11 +19,15 @@ const TYPES = {voiture: 'Voiture', utilitaire: 'Utilitaire', moto: 'Scooter / mo
 // cases par defaut et faisait perdre la selection en cours.
 const CLE = 'fuelpilot:reglages';
 function reglagesLus(){
+  let brut = null;
   try{
     // Ancienne cle (versions anterieures au 16/09/2026) lue si la nouvelle est vide.
-    return JSON.parse(localStorage.getItem(CLE) ||
-                      localStorage.getItem('carte-carburants:reglages')) || {};
-  }catch(e){ return {}; }
+    brut = JSON.parse(localStorage.getItem(CLE) ||
+                      localStorage.getItem('carte-carburants:reglages'));
+  }catch(e){ /* JSON illisible : reglages vides */ }
+  // Un JSON valide mais de mauvaise forme (nombre, fiche nulle, carburants en texte) laissait
+  // la page morte au demarrage : la forme est controlee ici (src/partage.js).
+  return assainirReglages(brut, CASES.map(c => c[0]));
 }
 // Premier lancement = aucun reglage memorise (nouvelle ni ancienne cle) : l'assistant
 // vehicule s'ouvre, sauf si l'URL porte deja une fiche (#veh=) ou un trajet (#trajet=).
@@ -180,7 +184,12 @@ const coordsValides = (la, lo) => Number.isFinite(la) && Number.isFinite(lo) && 
 if(Array.isArray(REGL.centre) && coordsValides(+REGL.centre[0], +REGL.centre[1])) CENTRE = [+REGL.centre[0], +REGL.centre[1]];
 else if(REGL.centre != null) delete REGL.centre;
 const ZOOM0 = CENTRE ? 13 : 5.5;
-if(!CENTRE) CENTRE = [46.603, 2.334];
+// Repere REEL : une position de l'appareil ou un repere pose (situer), ou celui memorise. Le
+// centre de la France ne sert qu'a cadrer la carte : jamais de depart « Ma position » (voir
+// geocoder), meme s'il a ete memorise par une version anterieure (bouton « effacer »).
+const CENTRE_FRANCE = [46.603, 2.334];
+let REPERE_REEL = !!CENTRE && !(CENTRE[0] === CENTRE_FRANCE[0] && CENTRE[1] === CENTRE_FRANCE[1]);
+if(!CENTRE) CENTRE = CENTRE_FRANCE.slice();
 
 // ---------- Carte (MapLibre GL, fond IGN) ----------
 // Sans WebGL : message sur fond neutre, le reste (liste, garage, plan) fonctionne.
@@ -228,7 +237,7 @@ const dist = (la,lo) => {
   return 2*R*Math.asin(Math.sqrt(a));
 };
 // Trois couleurs tranchees, lues d'un coup d'oeil : VERT = le moins cher, BLEU = dans
-// la norme, ROUGE = cher (choix Eric, 17/09/2026 ; avant : bleu / marron / rouge).
+// la norme, ROUGE = cher (choix du 17/09/2026 ; avant : bleu / marron / rouge).
 // La couleur ne dit QUE le prix : les reperes du plan (etapes, depart, arrivee) sont
 // en noir, pour qu'un cercle vert ne se lise pas « moins cher ».
 // Couleurs lues depuis les jetons app.css (--vert/--bleu/--rouge) : source
@@ -329,7 +338,7 @@ const RUPT = {e10:'e10', sp98:'sp98', sp95:'sp95', e85:'e85',
 // Pays : badge sobre « ES » (liste, fiche, plan) pour les stations espagnoles (src/es.js) ;
 // rien pour la France. Texte seulement, pas d'image.
 const badgePays = s => s.pays ? `<span class="badge badge-pays" title="Station espagnole — prix du ministère espagnol">${esc(s.pays)}</span> ` : '';
-// Corrections faites sur place par l'utilisateur (Eric, 26/10/2026 : Lodeve, E85 annonce par
+// Corrections faites sur place par l'utilisateur (demande du 26/10/2026 : Lodeve, E85 annonce par
 // le flux officiel, pompe vide ; « ajoute cette fonction de modifier le prix ou mettre en
 // rupture »). Par station et par carburant : {t, prix?} ou {t, vide: true}. Gardees sur cet
 // appareil ; elles tiennent tant que la station n'a rien declare de plus recent, 48 h au plus.
@@ -612,7 +621,7 @@ function renduCarburant(){
   // stations viennent du flux.
   const etapesStation = new Map();   // station -> [n° d'etape, …] (deux en aller-retour possible)
   // Plein au depart / a l'arrivee : station -> libelle. Toujours visibles, meme avec
-  // le filtre « arrets du plan » (demande Eric, 17/09/2026 : Orleans > Montpellier,
+  // le filtre « arrets du plan » (demande du 17/09/2026 : Orleans > Montpellier,
   // aucune station ni au depart ni a l'arrivee).
   const extremites = new Map();
   // Trajet sans arret necessaire : stations gardees a la place du plan (voir plus bas).
@@ -664,13 +673,17 @@ function renduCarburant(){
       sonde = {etat: 'vehicule-incomplet'};
     }else{
       const A = au.A;
-      // A bord au depart (km, facultatif, Eric 24/10/2026) : vide = on part le plein fait ;
+      // A bord au depart (km, facultatif, demande du 24/10/2026) : vide = on part le plein fait ;
       // sinon le plan peut faire le plein en route s'il y est moins cher. Utile = valeur - reserve.
       const reserve = au.plein - A;
       const aBordBrut = $('aBord').value.trim() === '' ? null : Math.max(0, +$('aBord').value || 0);
       const aBordL = $('aBordUnite').value === 'l';   // en litres : converti avec la conso
       const aBord = aBordBrut == null ? null : Math.min(au.plein, aBordL ? (conso > 0 ? aBordBrut / conso * 100 : au.plein) : aBordBrut);
       const g0 = aBord == null ? A : Math.max(0, Math.min(A, aBord - reserve));
+      // Reservoir au depart saisi : optimiserPlan recoit aussi la reserve, qu'il n'entame que pour
+      // atteindre la premiere station quand aucune n'est a portee sans elle (reservoir presque
+      // vide) ; g0 y est compte depuis le seuil de la reserve, negatif si on est deja dessous.
+      const optsBord = aBord == null ? {g0} : {g0: aBord - reserve, reserve};
       const larg = +$('couloir').value;
       const lkm = conso / 100;
       const carbPlan = sel[0];               // le plan se calcule sur le 1er carburant coche
@@ -690,7 +703,7 @@ function renduCarburant(){
       const optsDe = cw => {
         const pd = aBord == null ? undefined
           : (prixBout(cw, c => c.km <= 15 && !c.risque) ?? prixBout(cw, c => c.km <= 15) ?? undefined);
-        return pd != null ? {g0, pd} : {g0};
+        return pd != null ? Object.assign({pd}, optsBord) : optsBord;
       };
       // Pompes signalees vides par d'autres utilisateurs (signalements partages, option « Éviter les
       // pompes signalées vides », 12 h) : retirees des candidates AVANT optimiserPlan — plan.js
@@ -713,11 +726,11 @@ function renduCarburant(){
       const plan = r.plan;
       utilesPlan = r.utiles || null;
       const voyage = coutVoyage(cand, r, total, lkm);
-      const eco = economieVsPlusCher(cand, A, total, lkm, voyage, {g0});             // vs le plus cher du couloir
+      const eco = economieVsPlusCher(cand, A, total, lkm, voyage, optsBord);        // vs le plus cher du couloir
       const notrePrix = prixMoyen(r, lkm, g0);                                         // €/L reellement paye
       // Temps perdu : ~5 min par arret + le detour parcouru a ~50 km/h.
       const minutes = e => 5 + (2 * e.e) / 50 * 60;
-      // Faire un detour ? (Eric, 26/10/2026 : plus de selecteur de couloir dans le
+      // Faire un detour ? (demande du 26/10/2026 : plus de selecteur de couloir dans le
       // formulaire ; « quatre possibilités avec l'écart de prix et le temps de détour, si ça
       // vaut le coup ».) Le plan est refait pour 1, 2, 5, 10 et 20 km de la route, sur les
       // memes donnees (chargees a 20 km quoi qu'il arrive). Ne restent que les choix utiles :
@@ -975,14 +988,26 @@ function renduCarburant(){
       };
       const ligneEco = () => {
         if(!eco) return null;
-        // Notre prix moyen au litre, puis l'economie contre le plus cher du couloir (Eric, 24/10/2026).
+        // Notre prix moyen au litre, puis l'economie contre le plus cher du couloir (demande du 24/10/2026).
         const notre = notrePrix != null ? `votre prix ${litre(notrePrix)} · ` : '';
         if(Math.abs(eco.economie) < 0.05) return el('b', 'eco nulle', `${notre}prix unique sur le trajet (${litre(eco.prix)})`);
         const signe = eco.economie > 0 ? '−' : '+';
         return el('b', 'eco' + (eco.economie > 0 ? '' : ' nulle'), `${notre}${signe}${euros(Math.abs(eco.economie))} vs pleins au plus cher (${litre(eco.prix)})`);
       };
 
-      if(plan === null){
+      // Reservoir presque vide : la reserve est entamee jusqu'a la premiere etape, l'ecran le dit.
+      if(r.reserveEntamee != null) heros.push(el('div', 'heros-etat', svg('alerte'), ' ', el('b', null, 'Réserve entamée'),
+        ` — il vous reste ${Math.round(aBord)} km : vous entamez la réserve jusqu'à ${nomVille(plan[0].s)} (km ${Math.round(plan[0].km)}) ; vous y arrivez avec ≈ ${Math.round(plan[0].arrivee + reserve)} km.`));
+      // Infaisable parce que rien n'est a portee de ce qui reste dans le reservoir, reserve comprise.
+      const horsPortee = plan === null && aBord != null && !cand.some(c => c.km + c.e <= aBord);
+      if(horsPortee){
+        const actions = el('div', 'actions');
+        if(detours.length) actions.append(bouton('btn primaire', 'Accepter un détour', () => { DETOUR_AUTO = true; rendu(); }));
+        heros.push(el('div', 'heros-etat ko', svg('alerte'), ' ', el('b', null, 'Aucune station à portée'),
+          ` — il vous reste ${Math.round(aBord)} km : aucune station à portée, avec les stations à ${larg} km de la route au plus.`, actions));
+        heros.push(choixDetour(), rappel, noteEvitees());
+        resume = `Plan de pleins : il vous reste ${Math.round(aBord)} km, aucune station à portée avec les stations à ${larg} km de la route au plus.`;
+      }else if(plan === null){
         // Etat : infaisable — trois remedes cliquables.
         const actions = el('div', 'actions');
         if(detours.length) actions.append(bouton('btn primaire', 'Accepter un détour', () => { DETOUR_AUTO = true; rendu(); }));
@@ -1165,7 +1190,7 @@ function ouvrirStation(o, origine){
   $('fsAdresse').innerHTML = (s.enseigne ? `<b>${langES(s, s.enseigne)}</b> · ` : '') + (s.adresse ? langES(s, s.adresse) : '<i>adresse non renseignée</i>');
   // Station espagnole : horaires resumes et ouvert / ferme a l'heure qu'il est (src/es.js) ;
   // la date de ses prix est l'horodatage global du fichier du ministere, pas un releve par station.
-  const ouvert = s.horario ? ouvertA(s.horario, new Date()) : null;
+  const ouvert = s.horario ? ouvertES(s.horario, new Date()) : null;
   const majES = s.pays === 'ES' ? Object.values(s.off.maj).find(Boolean) : null;
   $('fsInfos').innerHTML =
     (s.auto ? `<span>${ico('horloge')} automate 24 h/24</span>`
@@ -1278,7 +1303,7 @@ $('veh').onchange = e => {
 $('chipVeh').onclick = () => { appliquerVeh(); ouvrirFeuille('garage', $('chipVeh')); };
 // Le nom se fixe des qu'on quitte le champ (Entree, Tab, clic ailleurs) : avant le
 // 24/10/2026 seul OK le gardait, « Ajouter » ou un changement de vehicule juste apres
-// la saisie le perdait (Eric : « pouvoir nommer le vehicule au cas ou on en ait plusieurs »).
+// la saisie le perdait (demande : « pouvoir nommer le vehicule au cas ou on en ait plusieurs »).
 // Nom unique : les fiches se fusionnent par nom (reglagesEcrits), deux vehicules du meme
 // nom s'ecraseraient l'un l'autre (revue du 24/10/2026) : « Clio » pris -> « Clio 2 ».
 function nomLibre(nom, sauf = -1){
@@ -1423,47 +1448,51 @@ $('partagerPlan').onclick = () => {
 //       r (aller-retour)) ; peut etre suivi de &veh=… : la fiche est traitee AVANT le trajet,
 //       pour que le plan se calcule sur ce vehicule.
 //   #pos=lat,lon                                        repere sans geolocalisation
-// Les valeurs sont decodees puis traitees en TEXTE (.value, textContent), jamais en HTML ;
-// le hash est efface (history.replaceState) une fois lu.
+// Les valeurs sont decodees puis traitees en TEXTE (.value, textContent), jamais en HTML.
+// La lecture est dans src/partage.js (lireFragment, testee) : elle comprend aussi un lien dont
+// les « | » ont ete encodes en %7C par une messagerie, et rend les parametres illisibles.
+// Le hash est efface (history.replaceState) une fois lu ; un lien illisible, meme en partie,
+// est annonce sous l'etat et son hash reste en place. IMPORT_HASH (qui retient l'assistant de
+// premier lancement) n'est leve que si une fiche ou un trajet a vraiment ete lu.
 let IMPORT_HASH = false, TRAJET_IMPORT = null;
 (function(){
-  const h = location.hash.slice(1);
-  if(!h) return;
-  const parts = {};
-  h.split('&').forEach(x => { const i = x.indexOf('='); if(i > 0) parts[x.slice(0, i)] = x.slice(i + 1); });
-  const dec = x => { try{ return decodeURIComponent(x); }catch(e){ return x; } };
-  let lu = false;
-  if(parts.pos){
-    // #pos=lat,lon : pose le repere sans geolocalisation — indispensable en
-    // file:// (Firefox reserve la geolocalisation aux contextes securises).
-    const mp = parts.pos.match(/^(-?[0-9.]+),(-?[0-9.]+)$/);
-    if(mp && coordsValides(+mp[1], +mp[2])){ setTimeout(() => situer(+mp[1], +mp[2], 'Point de repère'), 0); lu = true; }
-  }
-  const v = parts.veh ? paramVersVeh(parts.veh, DEFAUT) : null;
+  if(!location.hash.slice(1)) return;
+  const lien = lireFragment(location.hash, DEFAUT);
+  // #pos=lat,lon : pose le repere sans geolocalisation — indispensable en
+  // file:// (Firefox reserve la geolocalisation aux contextes securises).
+  if(lien.pos) setTimeout(() => situer(lien.pos.lat, lien.pos.lon, 'Point de repère'), 0);
+  const v = lien.veh;
+  let annonce = '';
   if(v){
-    const nom = v.nom;
-    const i = REGL.vehicules.findIndex(x => x.nom === nom);
-    if(i >= 0) REGL.vehicules[i] = Object.assign({type: REGL.vehicules[i].type, cat: REGL.vehicules[i].cat}, v); else REGL.vehicules.push(v);
-    REGL.vehActif = i >= 0 ? i : REGL.vehicules.length - 1;
+    // Jamais d'ecrasement : une fiche du garage qui porte le meme nom (« Véhicule 1 » est le nom
+    // par defaut) et differe reste intacte, la fiche recue est rangee sous un nom libre et
+    // annoncee ; identique, elle est seulement activee (fusionnerImport, src/partage.js).
+    const f = fusionnerImport(REGL.vehicules, v);
+    REGL.vehicules = f.vehicules;
+    REGL.vehActif = f.actif;
     appliquerVeh(); majSelectVeh(); reglagesEcrits();
-    IMPORT_HASH = true; lu = true;
+    if(f.cas === 'renommee') annonce = `Fiche importée : « ${f.nom} » (votre fiche « ${v.nom} » est conservée).`;
+    IMPORT_HASH = true;
   }
-  if(parts.trajet){
-    const f = parts.trajet.split('|');
-    const arr = dec(f[1] || '').trim(), dep = dec(f[0] || '').trim();
-    if(arr){
-      $('depart').value = dep || 'Ma position'; // vide = « Ma position » (le repere courant)
-      $('arrivee').value = arr;
-      if(['1', '2', '5', '10', '20'].includes(f[2])){ $('couloir').value = f[2]; REGL.couloir = f[2]; }
-      const o = f[3] || '';
-      $('sansPeage').checked = o.includes('p');
-      $('allerRetour').checked = o.includes('r');
-      // Depart « Ma position » : on attend la reponse de la geolocalisation avant de calculer.
-      TRAJET_IMPORT = {attendPosition: !dep || /^ma position$/i.test(dep)};
-    }
-    IMPORT_HASH = true; lu = true;
+  const t = lien.trajet;
+  if(t){
+    $('depart').value = t.dep || 'Ma position'; // vide = « Ma position » (le repere courant)
+    $('arrivee').value = t.arr;
+    if(t.couloir){ $('couloir').value = t.couloir; REGL.couloir = t.couloir; }
+    $('sansPeage').checked = t.sansPeage;
+    $('allerRetour').checked = t.ar;
+    // Depart « Ma position » : on attend la reponse de la geolocalisation avant de calculer.
+    TRAJET_IMPORT = {attendPosition: !t.dep || /^ma position$/i.test(t.dep)};
+    IMPORT_HASH = true;
   }
-  if(lu) history.replaceState(null, '', location.pathname);
+  const illisible = messageLienIllisible(lien.erreurs);
+  if(annonce || illisible){
+    // Texte (jamais HTML) ; l'annonce seule est une information, pas une erreur.
+    $('lienMsg').textContent = [annonce, illisible].filter(Boolean).join(' ');
+    if(!illisible) $('lienMsg').className = 'etat';
+    deplier('moitie');   // au telephone, le message serait sous le bord de la feuille repliee
+  }
+  if(!illisible && (lien.pos || v || t)) history.replaceState(null, '', location.pathname);
 })();
 $('sansCher').onchange = () => { reglagesEcrits(); rendu(); };
 
@@ -1885,7 +1914,7 @@ $('sansPeage').onchange = $('allerRetour').onchange = () => {
 let libelleRepere = 'Point de repère';
 function situer(lat, lon, libelle, explicite){
   if(!coordsValides(lat, lon)) return;   // cf. coordsValides, en tete
-  CENTRE = [lat, lon];
+  CENTRE = [lat, lon]; REPERE_REEL = true;
   libelleRepere = libelle;
   REGL.centre = [lat, lon]; reglagesEcrits();
   $('posMemo').hidden = false;
@@ -2025,27 +2054,44 @@ const VALEUR_HEURE = 10;   // €/h : en dessous, un detour ne « vaut pas le co
 let I_RETOUR = null;     // indice du premier point du retour dans ROUTE (null : aller simple)
 let ALLER_KM = null;     // km de l'arrivee sur la boucle (null : aller simple)
 let ROUTE_AR = false;    // le trajet affiche est un aller-retour
-let TRAJET = null;       // {dep, arr, km, min, ar, sansP} du trajet affiche (en-tete du plan)
+let TRAJET = null;       // {dep, arr, km, min, ar, sansP, saisie} du trajet affiche (en-tete du plan)
 let TRAJET_SANS_GESTE = false;   // calcul lance sans geste (import #trajet=) : pas d'animation
 const infoT = $('infoTrajet');
 // Un depart vide ou « Ma position » vaut le repere courant.
 const maPosition = q => !q.trim() || /^ma position$/i.test(q.trim());
+// Sans repere reel (localisation refusee ou absente, rien de memorise : premier lancement,
+// lien partage ouvert par un tiers), « Ma position » n'est nulle part : on le dit, on ne
+// part pas du centre de la France.
+const POSITION_INCONNUE = 'Position inconnue : autorisez la localisation, posez un repère ou saisissez l\'adresse de départ.';
 
-async function geocoder(q){
-  if(maPosition(q)) return {lon: CENTRE[1], lat: CENTRE[0], label: libelleRepere === 'Ma position' ? 'ma position' : 'le repère'};
-  // Geoplateforme d'abord (memes donnees BAN ; mesure le 24/10/2026 : 0,1 s contre 8 a 18 s
-  // pour api-adresse, en cours de migration vers la Geoplateforme), api-adresse en secours.
-  const qs = `?q=${encodeURIComponent(q)}&limit=1`;
+// Les 5 premiers resultats du geocodeur (`communes` : communes seulement). Geoplateforme
+// d'abord (memes donnees BAN ; mesure le 24/10/2026 : 0,1 s contre 8 a 18 s pour api-adresse,
+// en cours de migration vers la Geoplateforme), api-adresse en secours.
+async function chercherLieux(q, communes){
+  const qs = `?q=${encodeURIComponent(q)}&limit=5${communes ? '&type=municipality' : ''}`;
   let j;
   try{ j = await lireJson(GEOC + qs); }
   catch(e){
     try{ j = await lireJson(BAN + qs); }
     catch(e2){ throw new Error('géocodage indisponible'); }
   }
-  if(!j.features.length) throw new Error(`adresse introuvable : « ${q} »`);
-  const f = j.features[0];
-  return {lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
-          label: f.properties.label};
+  return j.features;
+}
+async function geocoder(q){
+  if(maPosition(q)){
+    if(!REPERE_REEL) throw new Error(POSITION_INCONNUE);
+    return {lon: CENTRE[1], lat: CENTRE[0], label: libelleRepere === 'Ma position' ? 'ma position' : 'le repère'};
+  }
+  // Le premier resultat n'est pas toujours le bon (« Narbonne » : une voie de Joue-les-Tours
+  // avant la commune) : le choix est dans lieux.js (choisirLieu, pur, teste). Un nom que les
+  // 5 premiers ne resolvent pas est recherche une seconde fois parmi les communes seules.
+  // Espagne : les deux geocodeurs ne connaissent que la France ; les grandes villes et la
+  // frontiere viennent de la table embarquee (es.js, villeES), consultee d'abord. Le reste est
+  // refuse en clair plutot que route vers une voie homonyme (« Madrid », en Charente).
+  let l = villeES(q) || choisirLieu(q, await chercherLieux(q));
+  if(!l && nomSeul(q)) l = choisirLieu(q, await chercherLieux(q, true));
+  if(!l) throw new Error(`lieu introuvable en France : « ${q.trim()} ». Précisez la commune ou le code postal ; en Espagne, seules les grandes villes et la frontière se saisissent (voir l'aide).`);
+  return l;
 }
 
 // Distance d'un point au trace, en km (approximation plane : a cette echelle
@@ -2090,7 +2136,7 @@ function situerSurTrace(s){
 }
 
 // ---------- Trajets memorises ----------
-// Demande Eric, 17/09/2026 : rappeler un trajet frequent en un clic. Cle dediee,
+// Demande du 17/09/2026 : rappeler un trajet frequent en un clic. Cle dediee,
 // relue fraiche avant chaque ecriture : plusieurs onglets partagent ce stockage
 // (meme precaution que pour le garage). Un depart vide vaut « ma position ».
 const CLE_TRAJETS = 'fuelpilot:trajets';
@@ -2105,11 +2151,13 @@ const trajetCourant = () => ({dep: maPosition($('depart').value) ? '' : $('depar
 const memeTrajet = (x, y) => String(x.dep).toLowerCase() === String(y.dep).toLowerCase() &&
   String(x.arr).toLowerCase() === String(y.arr).toLowerCase() && !!x.sansPeage === !!y.sansPeage && !!x.ar === !!y.ar;
 const nomTrajet = t => `${t.dep || 'Ma position'} ${t.ar ? '⇄' : '→'} ${t.arr}${t.sansPeage ? ' (sans péage)' : ''}`;
+// Trajet AFFICHE, tel qu'il a ete saisi au moment du calcul (TRAJET.saisie) ; null sans trajet.
+// Le partage, la memorisation et la pilule le lisent : une frappe dans « Départ » ou
+// « Arrivée » sans relancer le calcul ne change pas ce qui est partage ou memorise.
+const trajetAffiche = () => ROUTE && TRAJET && TRAJET.saisie && TRAJET.saisie.arr ? TRAJET.saisie : null;
 // Lien de partage du plan : trajet tel que saisi (jamais une coordonnee) + fiche vehicule.
 function lienTrajet(){
-  const c = trajetCourant();
-  const o = (c.sansPeage ? 'p' : '') + (c.ar ? 'r' : '');
-  return `${lienBase()}#trajet=${encodeURIComponent(c.dep)}|${encodeURIComponent(c.arr)}|${$('couloir').value}|${o}` +
+  return `${lienBase()}#trajet=${trajetVersParam(trajetAffiche() || trajetCourant(), $('couloir').value)}` +
          `&veh=${vehParam(REGL.vehicules[REGL.vehActif])}`;
 }
 function majTrajets(){
@@ -2119,16 +2167,16 @@ function majTrajets(){
   sel.replaceChildren(new Option('Trajets mémorisés…', ''),
     ...liste.map((t,i) => new Option(nomTrajet(t), String(i))));
   sel.hidden = !liste.length;
-  const b = $('memoriser'), c = trajetCourant();
-  const deja = !!(ROUTE && c.arr && liste.some(t => memeTrajet(t, c)));
-  b.hidden = !(ROUTE && c.arr);
+  const b = $('memoriser'), c = trajetAffiche();
+  const deja = !!(c && liste.some(t => memeTrajet(t, c)));
+  b.hidden = !c;
   b.setAttribute('aria-pressed', String(deja));
   b.innerHTML = ico(deja ? 'etoilePleine' : 'etoile') + (deja ? ' Mémorisé' : ' Mémoriser');
   b.title = deja ? 'Retirer ce trajet des trajets mémorisés' : 'Mémoriser ce trajet';
 }
 $('memoriser').onclick = () => {
-  const c = trajetCourant();
-  if(!c.arr) return;
+  const c = trajetAffiche();
+  if(!c) return;
   let liste = trajetsLus();
   const i = liste.findIndex(t => memeTrajet(t, c));
   if(i >= 0) liste.splice(i, 1); else liste = [c, ...liste].slice(0, 20);
@@ -2170,11 +2218,11 @@ function rechercheOuverte(on){
 $('pilule').onclick = () => rechercheOuverte(!$('recherche').classList.contains('ouvert'));
 document.addEventListener('echap', () => { rechercheOuverte(false); reticule(false); });
 function majPilule(){
-  const c = trajetCourant();
-  $('piluleTxt').textContent = ROUTE && c.arr ? `${c.dep || 'Ma position'} ${c.ar ? '⇄' : '→'} ${c.arr}` : 'Où allez-vous ?';
+  const c = trajetAffiche();
+  $('piluleTxt').textContent = c ? `${c.dep || 'Ma position'} ${c.ar ? '⇄' : '→'} ${c.arr}` : 'Où allez-vous ?';
 }
 
-// ---------- Depart « Ma position » et lieux recents (Eric, 26/10/2026) ----------
+// ---------- Depart « Ma position » et lieux recents (demande du 26/10/2026) ----------
 // « Garde en mémoire les entrées de type Où allez-vous, genre Orléans, quitte à l'effacer ;
 // départ avec ma position présélectionnée mais modifiable. »
 // Depart : « Ma position » ecrit d'office (en bleu), tout selectionne au toucher — taper
@@ -2306,9 +2354,14 @@ async function itineraireSecours(a, b, sansP){
 }
 // Un itineraire entre deux points (IGN, sinon secours), simplifie a ~400 points.
 async function itineraire(a, b, sansP){
-  let brut;
-  try{ brut = await itineraireIGN(a, b, sansP); MOTEUR = 'ign'; }
-  catch(e){
+  // Un bout en Espagne (villeES, es.js) : l'IGN ne trace qu'en France et rend SANS ERREUR un
+  // trajet arrete a la frontiere (mesure le 11/11/2026 : Perpignan → Barcelone, 115 km au
+  // lieu de 190) ; on trace alors directement avec OpenStreetMap.
+  let brut = null;
+  if(a.pays !== 'ES' && b.pays !== 'ES'){
+    try{ brut = await itineraireIGN(a, b, sansP); MOTEUR = 'ign'; }catch(e){}
+  }
+  if(!brut){
     try{ brut = await itineraireSecours(a, b, sansP); MOTEUR = 'osm'; }
     catch(e2){ throw new Error('calcul d\'itinéraire indisponible (IGN et secours)'); }
   }
@@ -2320,7 +2373,7 @@ async function itineraire(a, b, sansP){
 }
 const duree = m => { const min = Math.round(m); return min >= 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${min} min`; };
 
-// Au lancement d'un trajet, on demande d'office combien de km on peut encore faire (Eric,
+// Au lancement d'un trajet, on demande d'office combien de km on peut encore faire (demande du
 // 24/10/2026) : Valider remplit « Réservoir au départ », Passer (ou fermer) = plein. Une fois par couple
 // depart/arrivee ; jamais pour un trajet importe par lien, ni sans autonomie connue, ni si
 // « Réservoir au départ » est deja rempli. Le calcul repart a la reponse.
@@ -2354,6 +2407,7 @@ async function calculerTrajet(ev){
   const mien = ++CALCUL_N;
   infoT.textContent = 'calcul…';
   try{
+    const c = trajetCourant();   // la saisie telle qu'elle part au calcul, avant toute attente
     const [a, b] = await Promise.all([
       geocoder($('depart').value),
       geocoder($('arrivee').value)]);
@@ -2368,9 +2422,10 @@ async function calculerTrajet(ev){
     ROUTE = pts; I_RETOUR = iRetour; ROUTE_AR = !!retour;
     preparerKms();
     ALLER_KM = iRetour != null ? KMS[iRetour] : null;
-    const c = trajetCourant();
     DETOUR_AUTO = !sansGeste;   // lien partage : on garde son detour
-    TRAJET = {dep: c.dep || 'Ma position', arr: c.arr || 'Ma position', ar: !!retour, sansP,
+    // En-tete du plan : le libelle geocode quand il differe de la saisie (lieux.js).
+    TRAJET = {dep: c.dep ? libelleTrajet(c.dep, a.label) : 'Ma position', arr: c.arr ? libelleTrajet(c.arr, b.label) : 'Ma position', ar: !!retour, sansP,
+              saisie: {dep: c.dep, arr: c.arr, sansPeage: !!sansP, ar: !!retour},   // lu par le partage et la memorisation
               km: (aller.distance + (retour ? retour.distance : 0)) / 1000,
               min: (aller.duration + (retour ? retour.duration : 0)) / 60};
 
@@ -2392,7 +2447,7 @@ async function calculerTrajet(ev){
     }
     infoT.textContent = `${Math.round(TRAJET.km)} km · ${duree(TRAJET.min)}`+
       `${sansP ? (MOTEUR === 'osm' ? ' · sans péage' : ' · sans autoroute') : ''}${ar ? ' · aller-retour' : ''}`+
-      ` · ${a.label} ${ar ? '⇄' : '→'} ${b.label}${MOTEUR === 'osm' ? ' · tracé OpenStreetMap (IGN muette)' : ''}`;
+      ` · ${a.label} ${ar ? '⇄' : '→'} ${b.label}${MOTEUR === 'osm' ? (a.pays === 'ES' || b.pays === 'ES' ? ' · tracé OpenStreetMap' : ' · tracé OpenStreetMap (IGN muette)') : ''}`;
     $('effacer').hidden = false;
     if(!sansGeste) retenirLieux($('arrivee').value, $('depart').value);
     majTrajets(); majPilule();
@@ -2403,6 +2458,11 @@ async function calculerTrajet(ev){
     if(mien !== CALCUL_N) return;
     // Hors ligne : adresses et trace demandent le reseau (jamais mis en cache) ; on le dit tel quel.
     infoT.textContent = navigator.onLine === false ? 'Hors ligne : itinéraire indisponible (adresses et tracé demandent le réseau).' : e.message;
+    // Position inconnue : le formulaire reste ouvert (pilule du telephone), sur le bout a remplir.
+    if(e.message === POSITION_INCONNUE){
+      if(MOBILE.matches) rechercheOuverte(true);
+      $(maPosition($('depart').value) ? 'depart' : 'arrivee').focus();
+    }
     if(sansGeste) charger();   // trajet importe injoignable : les prix autour de soi, au moins
   }
 }
@@ -2426,7 +2486,7 @@ $('effacer').onclick = () => {
   $('effacer').hidden = true;
   majTrajets(); majPilule(); replierStations(false); rendu();
   infoT.textContent = '';
-  situer(CENTRE[0], CENTRE[1], libelleRepere, true);
+  if(REPERE_REEL) situer(CENTRE[0], CENTRE[1], libelleRepere, true);   // sinon rien a retrouver : le centre de la France n'est pas un repere
 };
 
 // ---------- Menus : fonds et apparence, options, aide ----------

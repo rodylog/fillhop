@@ -100,7 +100,7 @@ function creerAssistant(ctx){
   }
   // Ecran 1 -> fiche vehicule (celle du vehicule actif). strict (bouton Suivant) : au
   // moins un carburant, sinon message. Non strict (Passer, Echap, voile) : ce qui a ete
-  // saisi est garde tel quel — refaire la fiche est fastidieux (Eric, 24/10/2026) —, les
+  // saisi est garde tel quel — refaire la fiche est fastidieux (demande du 24/10/2026) —, les
   // carburants deja connus de la fiche servant si aucun n'est coche.
   function enregistrer(strict = true){
     let carbs = carbsChoisis();

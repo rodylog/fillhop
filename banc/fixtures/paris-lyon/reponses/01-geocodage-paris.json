@@ -1,5 +1,5 @@
 {
-  "url": "data.geopf.fr/geocodage/search/?limit=1&q=Paris",
+  "url": "data.geopf.fr/geocodage/search/?limit=5&q=Paris",
   "statut": 200,
   "type": "application/json; charset=utf-8",
   "corps": {
@@ -32,6 +32,6 @@
     "attribution": "BAN",
     "licence": "ETALAB-2.0",
     "query": "Paris",
-    "limit": 1
+    "limit": 5
   }
 }

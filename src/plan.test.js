@@ -176,7 +176,7 @@ test('economie positive quand une station moins chere est sur le trajet (cas Tou
   assert.ok(presque(eco.economie, 11.35) && presque(eco.reference, 69.3) && eco.prix === 1.05);
 });
 
-// ---- g0 : carburant a bord au depart (Eric, 24/10/2026) ----
+// ---- g0 : carburant a bord au depart (demande du 24/10/2026) ----
 
 test('a bord au depart : plein en route si moins cher qu\'au depart, et seulement le manque', () => {
   // A 400, g0 200, total 300 : il manque 100 km. D (km 5, 1.00) ou S (km 150, 0.80) :
@@ -194,6 +194,52 @@ test('a bord au depart : plein en route si moins cher qu\'au depart, et seulemen
 test('a bord suffisant : aucun arret ; insuffisant pour la premiere station : infaisable', () => {
   assert.deepStrictEqual(optimiserPlan([st('D', 5, 1)], 400, 150, 1, {g0: 200}).plan, []);
   assert.deepStrictEqual(optimiserPlan([st('S', 150, 1)], 400, 300, 1, {g0: 100}), {plan: null});
+});
+
+// ---- opts.reserve : reservoir presque vide, reserve entamee jusqu'a la premiere station (D08) ----
+
+test('D08 : reservoir 20 km, reserve 30, station au km 3 : la reserve est entamee jusqu\'a elle', () => {
+  // 20 km a bord pour 30 de reserve : g0 = 20 - 30 = -10 (deja 10 km sous la reserve). S3 (km 3,
+  // detour 0,2) est a 3,2 km : on y arrive avec -13,2. De la, juste ce qu'il faut pour l'arrivee :
+  // 57 + 0,2 km + les 13,2 km qui manquent a la reserve = 70,4 km a 1,70 (7,7792 EUR). Par S40
+  // en plus (50,5 km a 1,70 puis 20,1 km a 1,60 + un arret) ce serait plus cher.
+  const cand = [{s: 'S3', km: 3, e: 0.2, p: 1.7}, {s: 'S40', km: 40, e: 0.1, p: 1.6}];
+  assert.strictEqual(optimiserPlan(cand, 570, 60, 0.065, {g0: 0, pd: 1.7}).plan, null);     // sans l'option : inchange
+  assert.strictEqual(optimiserPlan(cand, 570, 60, 0.065, {g0: -10, pd: 1.7}).plan, null);
+  const r = optimiserPlan(cand, 570, 60, 0.065, {g0: -10, pd: 1.7, reserve: 30, utiles: true});
+  assert.deepStrictEqual(r.plan.map(e => [e.s, e.plein]), [['S3', false]]);
+  assert.ok(presque(r.plan[0].arrivee, -13.2) && presque(r.plan[0].q, 70.4));
+  assert.ok(presque(r.reserveEntamee, 3.2));
+  assert.ok(presque(r.coutAchats, 1.7 * 0.065 * 70.4) && presque(r.voyage, r.coutAchats));
+  assert.ok(r.utiles.has('S3'));
+  // La reference « au plus cher » suit la meme regle : elle reste chiffrable.
+  const eco = economieVsPlusCher(cand, 570, 60, 0.065, r.voyage, {g0: -10, reserve: 30});
+  assert.ok(eco && presque(eco.economie, 0));
+  // Station au-dela des 20 km qui restent : infaisable.
+  assert.deepStrictEqual(optimiserPlan([st('S', 25, 1)], 570, 60, 0.065, {g0: -10, reserve: 30}), {plan: null});
+});
+
+test('D08 : la reserve ne sert que si aucune station n\'est a portee sans elle, et jamais pour l\'arrivee', () => {
+  // 10 km utiles + 30 de reserve. P (km 8, 2.00) est a portee sans la reserve : B (km 25, 1.00),
+  // qui demanderait la reserve, n'est pas une premiere etape ; on arrive a P avec 2 km, on y
+  // achete juste de quoi rejoindre B (17 - 2 = 15 km), puis le reste a B. Meme plan que sans
+  // l'option, rien d'entame.
+  const cand = [st('P', 8, 2.00), st('B', 25, 1.00)];
+  const r = optimiserPlan(cand, 400, 100, 1, {g0: 10, reserve: 30});
+  assert.deepStrictEqual(r.plan.map(e => [e.s, e.q]), [['P', 15], ['B', 75]]);
+  assert.strictEqual(r.reserveEntamee, undefined);
+  assert.deepStrictEqual(r, optimiserPlan(cand, 400, 100, 1, {g0: 10}));
+  // Sans P : B devient la premiere station, atteinte 15 km sous la reserve ; 75 + 15 km achetes.
+  const r2 = optimiserPlan([st('B', 25, 1.00)], 400, 100, 1, {g0: 10, reserve: 30});
+  assert.deepStrictEqual(r2.plan.map(e => [e.s, e.q, e.arrivee]), [['B', 90, -15]]);
+  assert.strictEqual(r2.reserveEntamee, 15);
+  // Station au-dela de ce qui reste, reserve comprise (10 + 30 < 45) : infaisable.
+  assert.deepStrictEqual(optimiserPlan([st('B', 45, 1.00)], 400, 100, 1, {g0: 10, reserve: 30}), {plan: null});
+  // L'arrivee ne se rejoint pas sur la reserve : 10 km utiles pour 35 km sans station -> infaisable.
+  assert.deepStrictEqual(optimiserPlan([], 400, 35, 1, {g0: 10, reserve: 30}), {plan: null});
+  // Le plein a la premiere station refait aussi la reserve : 400 + 15 km achetes a B, puis C.
+  const r3 = optimiserPlan([st('B', 25, 1.00), st('C', 400, 3.00)], 400, 500, 1, {g0: 10, reserve: 30});
+  assert.deepStrictEqual(r3.plan.map(e => [e.s, e.plein, e.q]), [['B', true, 415], ['C', false, 75]]);
 });
 
 test('economie : infaisable ou voyage non chiffrable -> null', () => {
@@ -254,4 +300,112 @@ test('plan transfrontalier : 2 francaises + 2 espagnoles, la moins chere gagne q
   const ext = pleinsExtremites(cand, 500, 15);
   assert.strictEqual(ext.depart.s.id, 'F1');
   assert.strictEqual(ext.arrivee, null);
+});
+
+// ---- Comparaison a une recherche exhaustive (petits cas tires au hasard, graine fixee) ----
+// plan.js annonce un optimum exact pour sa famille de politiques (a chaque arret : juste ce qu'il
+// faut ou le plein ; 0,80 EUR par arret). exhaustifPlan enumere TOUTES les suites d'arrets et
+// d'achats de cette famille, sans programmation dynamique, et renvoie le cout minimal (achats +
+// arrets), Infinity si rien ne passe. La regle du depart y est reecrite a part : la reserve
+// (opts.reserve) ne sert qu'au premier troncon, vers une station, et seulement si aucune station
+// n'est a portee sans elle.
+function alea(graine){
+  let a = graine >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const ent = (h, a, b) => a + Math.floor(h() * (b - a + 1));
+function departDe(A, opts){
+  const rsv = Math.max(0, opts.reserve || 0);
+  const gBrut = Math.max(-rsv, Math.min(A, opts.g0 != null ? opts.g0 : A));
+  return {rsv, gBrut, g0: Math.max(0, gBrut)};
+}
+function exhaustifPlan(cand, A, total, lkm, opts){
+  const {rsv, gBrut, g0} = departDe(A, opts);
+  if(total <= g0) return 0;
+  const n = cand.length;
+  const dist = (j, k) => (k === n ? total : cand[k].km + cand[k].e) - (j < 0 ? 0 : cand[j].km - cand[j].e);
+  const aPortee = gBrut >= 0 && cand.some((c, i) => dist(-1, i) <= g0);
+  let meilleur = Infinity;
+  const aller = (j, g, c) => {
+    for(let k = j + 1; k <= n; k++){
+      const L = dist(j, k);
+      if(L > A) continue;
+      for(const q of new Set([L - g, A - g])){
+        if(q <= 1e-9) continue;
+        const c2 = c + cand[j].p * lkm * q + 0.8;
+        if(k === n) meilleur = Math.min(meilleur, c2); else aller(k, g + q - L, c2);
+      }
+    }
+  };
+  for(let k = 0; k < n; k++){
+    const L = dist(-1, k);
+    if(L <= (aPortee ? g0 : gBrut + rsv)) aller(k, gBrut - L, 0);
+  }
+  return meilleur;
+}
+// Rejoue le plan rendu : jamais sous la reserve apres le premier troncon, jamais au-dela du plein,
+// l'arrivee de chaque etape est celle annoncee, et l'arrivee du trajet est atteinte.
+function rejouerPlan(r, cand, A, total, lkm, opts){
+  const {rsv, gBrut} = departDe(A, opts);
+  let g = gBrut, km = 0, e = 0;
+  r.plan.forEach((s, i) => {
+    g -= s.km - km + e + s.e;
+    assert.ok(g >= (i === 0 ? -rsv : 0) - 1e-9, 'panne avant ' + s.s);
+    assert.ok(presque(g, s.arrivee, 1e-6));
+    g += s.q; km = s.km; e = s.e;
+    assert.ok(s.q > 0 && g <= A + 1e-9, 'achat au-dela du plein a ' + s.s);
+  });
+  assert.ok(g - (total - km + e) >= -1e-9, 'panne avant l\'arrivee');
+  assert.ok(presque(r.coutAchats, r.plan.reduce((t, s) => t + s.p * lkm * s.q, 0), 1e-6));
+}
+// tirage(h) -> {A, opts} pour des stations deja tirees ; renvoie {cas, faisables, entamees}.
+function comparerPlans(graine, cas, tirage){
+  const h = alea(graine);
+  let faisables = 0, entamees = 0;
+  for(let t = 0; t < cas; t++){
+    const total = ent(h, 40, 300), cand = [];
+    for(let i = ent(h, 0, 6); i > 0; i--) cand.push({s: 'S' + i, km: ent(h, 0, total), e: ent(h, 0, 8) / 2, p: ent(h, 150, 200) / 100});
+    cand.sort((x, y) => x.km - y.km);
+    const {A, opts} = tirage(h, cand.length ? cand[0].km + cand[0].e : total, total);
+    const r = optimiserPlan(cand, A, total, 0.06, opts), ex = exhaustifPlan(cand, A, total, 0.06, opts);
+    const ctx = JSON.stringify({cand, A, total, opts});
+    if(r.plan === null){ assert.strictEqual(ex, Infinity, 'declare infaisable a tort : ' + ctx); continue; }
+    assert.ok(presque(r.coutAchats + 0.8 * r.plan.length, ex, 1e-6), 'plan non optimal : ' + ctx);
+    rejouerPlan(r, cand, A, total, 0.06, opts);
+    if(r.plan.length) faisables++;
+    if(r.reserveEntamee != null) entamees++;
+  }
+  return {faisables, entamees};
+}
+
+test('exhaustif : cas generaux (reservoir plein ou entame, avec ou sans reserve)', () => {
+  const {faisables} = comparerPlans(20261111, 1500, h => {
+    const A = ent(h, 40, 200);
+    return {A, opts: h() < 0.4 ? {} : h() < 0.5 ? {g0: ent(h, 0, A)} : {g0: ent(h, -20, A), reserve: ent(h, 0, 40)}};
+  });
+  assert.ok(faisables > 300);
+});
+
+test('exhaustif : reservoir au depart inferieur a la premiere station', () => {
+  const {faisables, entamees} = comparerPlans(20261112, 1500, (h, prem) => {
+    const rsv = ent(h, 5, 40), g0 = ent(h, -rsv, Math.max(0, Math.ceil(prem) - 1));
+    return {A: ent(h, 60, 200), opts: h() < 0.8 ? {g0, reserve: rsv} : {g0}};
+  });
+  assert.ok(faisables > 150 && entamees > 150);
+});
+
+test('exhaustif : autonomie inferieure au premier troncon', () => {
+  const {entamees} = comparerPlans(20261113, 1500, (h, prem) => {
+    const A = ent(h, 5, Math.max(6, Math.ceil(prem)));
+    return {A, opts: h() < 0.4 ? {} : {g0: ent(h, 0, A), reserve: ent(h, 0, 60)}};
+  });
+  assert.ok(entamees > 20);
+});
+
+test('exhaustif : reserve superieure a l\'autonomie (y compris autonomie utile nulle ou negative)', () => {
+  const {entamees} = comparerPlans(20261114, 1500, h => {
+    const A = ent(h, -10, 80), rsv = Math.max(A, 0) + ent(h, 1, 60);
+    return {A, opts: {g0: ent(h, -rsv, Math.max(A, 0)), reserve: rsv}};
+  });
+  assert.ok(entamees > 20);
 });

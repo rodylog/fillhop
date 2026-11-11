@@ -5,8 +5,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {nombreES, fechaISO, normaliserStationES, ouvertA, resumerHorario, provincesPourEmprise, enEspagne,
-       recouvrementsProvinces, ES_PROVINCIAS, ES_CLES, ES_ENVELOPPE} = require('./es.js');
+const {nombreES, fechaISO, normaliserStationES, ouvertES, resumerHorario, provincesPourEmprise, enEspagne,
+       recouvrementsProvinces, ES_PROVINCIAS, ES_CLES, ES_ENVELOPPE, ES_VILLES, ES_HOMONYMES_FR, villeES} = require('./es.js');
 const ECH = require('./fixtures/es-echantillon-girona.json');
 
 // Station francaise FACTICE construite comme dans app.js (normalise()) : memes cles, dans le
@@ -172,7 +172,7 @@ test('Fecha illisible : la station garde ses prix, dates null', () => {
   assert.strictEqual(s.maj.gazole, null);
 });
 
-// ---- ouvertA sur les trois Horario de l'echantillon ----
+// ---- ouvertES sur les trois Horario de l'echantillon ----
 const JEUDI_10H = new Date(2026, 9, 29, 10, 0);    // jeudi 29/10/2026 10:00
 const DIMANCHE_23H = new Date(2026, 10, 1, 23, 0); // dimanche 01/11/2026 23:00
 test('reperes de date : jeudi et dimanche', () => {
@@ -182,38 +182,38 @@ test('reperes de date : jeudi et dimanche', () => {
 
 test('« L-S: 06:00-22:00; D: 07:00-22:00 » : ouvert jeudi 10h, ferme dimanche 23h', () => {
   const h = ECH.ListaEESSPrecio[0].Horario;
-  assert.strictEqual(ouvertA(h, JEUDI_10H), true);
-  assert.strictEqual(ouvertA(h, DIMANCHE_23H), false);
-  assert.strictEqual(ouvertA(h, new Date(2026, 10, 1, 6, 30)), false);   // dimanche 6h30 : ouvre a 7h
-  assert.strictEqual(ouvertA(h, new Date(2026, 10, 1, 7, 0)), true);
-  assert.strictEqual(ouvertA(h, new Date(2026, 9, 29, 22, 0)), false);   // 22:00 exclu
+  assert.strictEqual(ouvertES(h, JEUDI_10H), true);
+  assert.strictEqual(ouvertES(h, DIMANCHE_23H), false);
+  assert.strictEqual(ouvertES(h, new Date(2026, 10, 1, 6, 30)), false);   // dimanche 6h30 : ouvre a 7h
+  assert.strictEqual(ouvertES(h, new Date(2026, 10, 1, 7, 0)), true);
+  assert.strictEqual(ouvertES(h, new Date(2026, 9, 29, 22, 0)), false);   // 22:00 exclu
 });
 
 test('« L-D: 24H » : toujours ouvert', () => {
   const h = ECH.ListaEESSPrecio[1].Horario;
-  assert.strictEqual(ouvertA(h, JEUDI_10H), true);
-  assert.strictEqual(ouvertA(h, DIMANCHE_23H), true);
+  assert.strictEqual(ouvertES(h, JEUDI_10H), true);
+  assert.strictEqual(ouvertES(h, DIMANCHE_23H), true);
 });
 
 test('« L-V: 06:00-22:00; S: 07:00-22:00; D: 08:00-14:30 » : jeudi 10h oui, dimanche 23h non', () => {
   const h = ECH.ListaEESSPrecio[2].Horario;
-  assert.strictEqual(ouvertA(h, JEUDI_10H), true);
-  assert.strictEqual(ouvertA(h, DIMANCHE_23H), false);
-  assert.strictEqual(ouvertA(h, new Date(2026, 10, 1, 14, 29)), true);   // dimanche 14:29
-  assert.strictEqual(ouvertA(h, new Date(2026, 10, 1, 14, 30)), false);
-  assert.strictEqual(ouvertA(h, new Date(2026, 9, 31, 6, 30)), false);   // samedi 6h30 : ouvre a 7h
+  assert.strictEqual(ouvertES(h, JEUDI_10H), true);
+  assert.strictEqual(ouvertES(h, DIMANCHE_23H), false);
+  assert.strictEqual(ouvertES(h, new Date(2026, 10, 1, 14, 29)), true);   // dimanche 14:29
+  assert.strictEqual(ouvertES(h, new Date(2026, 10, 1, 14, 30)), false);
+  assert.strictEqual(ouvertES(h, new Date(2026, 9, 31, 6, 30)), false);   // samedi 6h30 : ouvre a 7h
 });
 
 test('horaire vide, inconnu ou date invalide -> null ; a cheval sur minuit ; jours enumeres', () => {
-  assert.strictEqual(ouvertA('', JEUDI_10H), null);
-  assert.strictEqual(ouvertA(undefined, JEUDI_10H), null);
-  assert.strictEqual(ouvertA('horario variable', JEUDI_10H), null);
-  assert.strictEqual(ouvertA('L-D: 24H', new Date('x')), null);
-  assert.strictEqual(ouvertA('L-D: 22:00-06:00', new Date(2026, 9, 29, 23, 30)), true);
-  assert.strictEqual(ouvertA('L-D: 22:00-06:00', new Date(2026, 9, 29, 12, 0)), false);
-  assert.strictEqual(ouvertA('S, D: 09:00-13:00', new Date(2026, 10, 1, 10, 0)), true);   // dimanche
-  assert.strictEqual(ouvertA('S, D: 09:00-13:00', JEUDI_10H), false);
-  assert.strictEqual(ouvertA('V-L: 09:00-13:00', new Date(2026, 10, 1, 10, 0)), true);    // ven..lun (passe par dimanche)
+  assert.strictEqual(ouvertES('', JEUDI_10H), null);
+  assert.strictEqual(ouvertES(undefined, JEUDI_10H), null);
+  assert.strictEqual(ouvertES('horario variable', JEUDI_10H), null);
+  assert.strictEqual(ouvertES('L-D: 24H', new Date('x')), null);
+  assert.strictEqual(ouvertES('L-D: 22:00-06:00', new Date(2026, 9, 29, 23, 30)), true);
+  assert.strictEqual(ouvertES('L-D: 22:00-06:00', new Date(2026, 9, 29, 12, 0)), false);
+  assert.strictEqual(ouvertES('S, D: 09:00-13:00', new Date(2026, 10, 1, 10, 0)), true);   // dimanche
+  assert.strictEqual(ouvertES('S, D: 09:00-13:00', JEUDI_10H), false);
+  assert.strictEqual(ouvertES('V-L: 09:00-13:00', new Date(2026, 10, 1, 10, 0)), true);    // ven..lun (passe par dimanche)
 });
 
 test('resumerHorario : lisible en francais, 24 h/24 reconnu, brut si illisible', () => {
@@ -283,4 +283,47 @@ test('table v2 : aucune boite ne touche 0, toutes dans l\'enveloppe espagnole, a
   // Pontevedra ne croise plus Perpignan, Cantabria plus Biarritz (v1 : requetes inutiles).
   assert.ok(!provincesPourEmprise(ES_PROVINCIAS, {s: 42.65, n: 42.75, w: 2.85, e: 2.95}).includes('36'));
   assert.deepStrictEqual(provincesPourEmprise(ES_PROVINCIAS, {s: 43.43, n: 43.53, w: -1.61, e: -1.51}), []);
+});
+
+// ---- Villes d'Espagne saisissables (table embarquee, consultee avant le geocodage) ----
+test('villeES : « Barcelone », « Barcelona », « Figueres », « Girona » sont dans la table', () => {
+  const b = villeES('Barcelone');
+  assert.deepEqual(b, {lon: 2.170, lat: 41.387, label: 'Barcelona (Espagne)', pays: 'ES'});
+  assert.deepEqual(villeES('Barcelona'), b);
+  assert.deepEqual(villeES('  BARCELONE '), b);
+  assert.deepEqual(villeES('Barcelone, Espagne'), b);
+  const f = villeES('Figueres');
+  assert.equal(f.label, 'Figueres (Espagne)');
+  assert.ok(Math.abs(f.lat - 42.27) < 0.02 && Math.abs(f.lon - 2.96) < 0.02);
+  const g = villeES('Girona');
+  assert.equal(g.label, 'Girona (Espagne)');
+  assert.ok(Math.abs(g.lat - 41.98) < 0.02 && Math.abs(g.lon - 2.82) < 0.02);
+  assert.deepEqual(villeES('Gérone'), g);
+  assert.equal(villeES('San Sebastian').label, 'San Sebastián (Espagne)');
+});
+
+test('villeES : hors table, null (le géocodage français décide)', () => {
+  for(const q of ['Perpignan', 'Narbonne', 'Barcelonnette', '12 rue de Barcelone, Toulouse', 'Lloret de Mar', 'Espagne', ''])
+    assert.equal(villeES(q), null, q);
+});
+
+test('villeES : un nom qui est aussi une commune française reste français, sauf suivi du pays', () => {
+  for(const q of ['Valence', 'Grenade', 'Cadix', 'Léon', 'Leon', 'Saint-Sébastien']) assert.equal(villeES(q), null, q);
+  assert.equal(villeES('Valence, Espagne').label, 'Valencia (Espagne)');
+  assert.equal(villeES('Léon Espagne').label, 'León (Espagne)');
+  assert.equal(villeES('Saint-Sébastien (Espagne)').label, 'San Sebastián (Espagne)');
+  assert.equal(villeES('Valencia').label, 'Valencia (Espagne)');     // le nom espagnol n'est pas ambigu
+  assert.ok(ES_HOMONYMES_FR.every(h => villeES(h) === null && villeES(h + ' espagne')));
+});
+
+test('ES_VILLES : la capitale des 47 provinces de la péninsule, chaque ville dans la boîte de sa province', () => {
+  const hors = ['07', '35', '38', '51', '52'];   // Baléares, Canaries, Ceuta, Melilla : aucune route
+  const provinces = new Set(ES_VILLES.map(v => v[0]));
+  assert.deepEqual(Object.keys(ES_PROVINCIAS).filter(id => !provinces.has(id)).sort(), hors);
+  for(const [id, lat, lon, nom] of ES_VILLES){
+    const [, , latMin, latMax, lonMin, lonMax] = ES_PROVINCIAS[id];
+    assert.ok(lat >= latMin && lat <= latMax && lon >= lonMin && lon <= lonMax, `${nom} hors de la province ${id}`);
+  }
+  const noms = ES_VILLES.flatMap(v => v.slice(3));
+  assert.equal(new Set(noms.map(n => n.toLowerCase())).size, noms.length, 'nom en double');
 });

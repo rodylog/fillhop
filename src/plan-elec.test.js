@@ -157,9 +157,136 @@ test('elagage au-dela de 240 bornes : plan toujours faisable, arrets en km crois
   for(const a of r.arrets) assert.ok(a.kw >= 125);   // les plus puissantes gardees
 });
 
+test('D09 : une borne a grand detour ne cache ni les bornes suivantes ni l\'arrivee', () => {
+  // 40 kWh, 17 kWh/100, reserve 5 % (2 kWh), depart 100 %, 500 km. Bornes aux km 150 et 370 :
+  // 150 km = 25,5 -> 26 kWh ; 220 km = 37,4 -> 38 kWh (+2 = 40 : batterie pleine) ; 130 km =
+  // 22,1 -> 23 kWh. Faisable, arrets [150, 370]. La borne du km 366 est a 20 km de la route :
+  // depuis le km 150, 216 + 20 km = 40,12 -> 41 kWh > 40, elle est hors de portee, mais celle
+  // du km 370 (sur la route) ne l'est pas : le plan doit rester le meme.
+  const veh = {batterieKwh: 40, consoKwh100: 17, kwMaxDC: 150, kwMaxAC: 11, prise: 'ccs', reservePct: 5, departPct: 100};
+  const sans = optimiserPlanElectrique([B('A', 150, 150), B('C', 370, 150)], null, 500, null, veh);
+  assert.ok(sans.faisable);
+  assert.deepStrictEqual(sans.arrets.map(a => a.kmDepuisDepart), [150, 370]);
+  const avec = optimiserPlanElectrique([B('A', 150, 150), B('LOIN', 366, 150, {ccs: true}, 20), B('C', 370, 150)], null, 500, null, veh);
+  assert.strictEqual(avec.faisable, true);
+  assert.deepStrictEqual(avec.arrets.map(a => a.kmDepuisDepart), [150, 370]);
+  assert.ok(presque(avec.minutesCharge, sans.minutesCharge));
+  // Au depart aussi : une borne au km 5 a 150 km de la route ne cache pas celle du km 150.
+  const dep = optimiserPlanElectrique([B('LOIN', 5, 150, {ccs: true}, 150), B('A', 150, 150), B('C', 370, 150)], null, 500, null, veh);
+  assert.deepStrictEqual(dep.arrets.map(a => a.kmDepuisDepart), [150, 370]);
+  // Trop espacees le long de la route : toujours infaisable.
+  assert.strictEqual(optimiserPlanElectrique([B('A', 150, 150)], null, 500, null, veh).faisable, false);
+});
+
 test('le plan carburant est inchange par l\'ajout (cas Montpellier -> Tours)', () => {
   const st = (s, km, p) => ({s, km, e: 0, p});
   const r = optimiserPlan([st('D', 5, 0.90), st('BON', 300, 0.85), st('CHER', 360, 1.05), st('F', 655, 0.90)], 370, 660, 0.1);
   assert.deepStrictEqual(r.plan.map(e => e.s), ['BON']);
   assert.ok(presque(r.voyage, 57.95));
+});
+
+// ---- Comparaison a une recherche exhaustive (petits cas tires au hasard, graine fixee) ----
+// exhaustifElec enumere toutes les suites d'arrets et, a chaque arret, TOUTES les recharges au
+// kWh entier (pas seulement « juste », 80 %, 100 %), sans programmation dynamique : temps de
+// charge minimal puis, a egalite, moins d'arrets ; null si rien ne passe. Meme modele que
+// plan.js (kWh entiers, consommation et reserve au kWh superieur, 5 min par arret, puissance
+// divisee par deux au-dela de 80 %), reecrit a part. Petites batteries (8 a 12,5 kWh) pour que
+// l'enumeration reste courte.
+function alea(graine){
+  let a = graine >>> 0;
+  return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const ent = (h, a, b) => a + Math.floor(h() * (b - a + 1));
+function exhaustifElec(bornes, total, veh){
+  const Bt = veh.batterieKwh, kwhKm = veh.consoKwh100 / 100;
+  const R = Bt * veh.reservePct / 100, E0 = Bt * veh.departPct / 100;
+  const Bi = Math.floor(Bt), Ri = Math.ceil(R - 1e-9), E0i = Math.min(Bi, Math.floor(E0 + 1e-9)), e80 = Math.floor(0.8 * Bt + 1e-9);
+  if(E0 - kwhKm * total >= R - 1e-9) return {min: 0, arr: 0};
+  const cand = bornes.map(b => ({km: b.km, e: b.e, kw: Math.min(b.s.kw, veh.kwMaxDC)})), n = cand.length;
+  const cons = (j, k) => Math.ceil(kwhKm * ((k === n ? total : cand[k].km + cand[k].e) - (j < 0 ? 0 : cand[j].km - cand[j].e)) - 1e-9);
+  let meilleur = null;
+  const garder = (m, a) => { if(!meilleur || m < meilleur.min - 1e-9 || (Math.abs(m - meilleur.min) <= 1e-9 && a < meilleur.arr)) meilleur = {min: m, arr: a}; };
+  const aller = (j, e, m, a) => {
+    let t = m + 5;
+    for(let T = e + 1; T <= Bi; T++){
+      t += 60 / (T - 1 < e80 ? cand[j].kw : cand[j].kw / 2);   // un kWh de plus
+      for(let k = j + 1; k <= n; k++){
+        const c = cons(j, k);
+        if(T - c < Ri) continue;
+        if(k === n) garder(t, a + 1); else aller(k, T - c, t, a + 1);
+      }
+    }
+  };
+  for(let k = 0; k <= n; k++){
+    const c = cons(-1, k);
+    if(E0i - c >= Ri){ if(k === n) garder(0, 0); else aller(k, E0i - c, 0, 0); }
+  }
+  return meilleur;
+}
+// tirage(h, veh, borne) -> {total, bornes} ; borne(i, km, e) fabrique une borne CCS de puissance
+// tiree au hasard. Renvoie le nombre de plans avec au moins un arret.
+function comparerCharges(graine, cas, tirage){
+  const h = alea(graine);
+  let avecArrets = 0;
+  for(let t = 0; t < cas; t++){
+    const veh = {batterieKwh: ent(h, 8, 12) + (h() < 0.3 ? 0.5 : 0), consoKwh100: ent(h, 12, 24), kwMaxDC: 100, kwMaxAC: 11, prise: 'ccs',
+                 reservePct: [0, 5, 15, 30][ent(h, 0, 3)], departPct: ent(h, 4, 10) * 10};
+    const borne = (i, km, e) => B('B' + i, km, [7, 22, 50, 150][ent(h, 0, 3)], {ccs: true}, e);
+    const {total, bornes} = tirage(h, veh, borne);
+    bornes.sort((x, y) => x.km - y.km);
+    const r = optimiserPlanElectrique(bornes, null, total, null, veh), ex = exhaustifElec(bornes, total, veh);
+    const ctx = JSON.stringify({bornes, total, veh});
+    assert.strictEqual(r.faisable, !!ex, (ex ? 'declare infaisable a tort : ' : 'declare faisable a tort : ') + ctx);
+    if(!ex) continue;
+    assert.ok(presque(r.minutesCharge, ex.min, 1e-6), `temps de charge ${r.minutesCharge} au lieu de ${ex.min} : ${ctx}`);
+    assert.strictEqual(r.arrets.length, ex.arr, 'nombre d\'arrets : ' + ctx);
+    assert.ok(presque(r.arrets.reduce((s, a) => s + a.minutes, 0), r.minutesCharge, 1e-6));
+    for(let i = 1; i < r.arrets.length; i++) assert.ok(r.arrets[i].kmDepuisDepart >= r.arrets[i - 1].kmDepuisDepart);
+    if(r.arrets.length) avecArrets++;
+  }
+  return avecArrets;
+}
+const bornesAuHasard = (h, borne, total, n, detour) => {
+  const l = [];
+  for(let i = 0; i < n; i++) l.push(borne(i, ent(h, 0, total), detour()));
+  return l;
+};
+
+test('exhaustif : detours non monotones (une borne sur deux loin de la route)', () => {
+  const n = comparerCharges(20261111, 600, (h, veh, borne) => {
+    const total = ent(h, 30, 140);
+    return {total, bornes: bornesAuHasard(h, borne, total, ent(h, 1, 4), () => h() < 0.5 ? 0 : ent(h, 0, 30))};
+  });
+  assert.ok(n > 80);
+});
+
+test('exhaustif : reserve a 0 %', () => {
+  const n = comparerCharges(20261112, 600, (h, veh, borne) => {
+    veh.reservePct = 0;
+    const total = ent(h, 30, 140);
+    return {total, bornes: bornesAuHasard(h, borne, total, ent(h, 1, 4), () => h() < 0.6 ? 0 : ent(h, 0, 20))};
+  });
+  assert.ok(n > 80);
+});
+
+test('exhaustif : borne au kilometre 0', () => {
+  const n = comparerCharges(20261113, 600, (h, veh, borne) => {
+    const total = ent(h, 30, 140);
+    const bornes = bornesAuHasard(h, borne, total, ent(h, 0, 3), () => h() < 0.6 ? 0 : ent(h, 0, 20));
+    bornes.push(borne(9, 0, h() < 0.7 ? 0 : ent(h, 1, 10)));
+    return {total, bornes};
+  });
+  assert.ok(n > 80);
+});
+
+test('exhaustif : aller-retour (chaque borne vue a l\'aller et au retour)', () => {
+  const n = comparerCharges(20261114, 600, (h, veh, borne) => {
+    const aller = ent(h, 20, 90), bornes = [];
+    for(let i = 0; i < 2; i++){
+      const x = borne(i, ent(h, 0, aller), h() < 0.5 ? 0 : ent(h, 0, 20));
+      bornes.push(x, {s: x.s, km: 2 * aller - x.km, e: x.e});
+    }
+    return {total: 2 * aller, bornes};
+  });
+  assert.ok(n > 80);
 });

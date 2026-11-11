@@ -1,6 +1,6 @@
 // Plan de pleins : ou s'arreter et combien acheter.
 //
-// Modele (refait le 24/10/2026, Eric : « un algorithme intelligent ») : on part le
+// Modele (refait le 24/10/2026, demande : « un algorithme intelligent ») : on part le
 // reservoir plein (A km utiles, paye au prix de depart pd) ; a chaque arret on achete
 // soit JUSTE ce qu'il faut pour atteindre l'arret suivant (ou l'arrivee), soit le PLEIN
 // (utile quand l'arret suivant, impose par l'autonomie, est plus cher : on y achete
@@ -16,14 +16,17 @@
 // cand : stations triees par km ({s, v, km, e, p}) ; A : autonomie utile (km) ;
 // total : km du trajet ; lkm : L/km ; opts.pd : €/L du plein de depart (defaut : la moins
 // chere a 15 km du depart, sinon la premiere etape) ; opts.utiles : calculer les stations par
-// lesquelles passe un plan quasi optimal (passe arriere, plus couteuse). Un arret coute
-// e km a l'aller et e au retour.
+// lesquelles passe un plan quasi optimal (passe arriere, plus couteuse) ; opts.reserve : taille
+// de la reserve (km), que le premier troncon peut entamer (voir plus bas) — opts.g0 peut alors
+// etre negatif (reservoir deja sous la reserve). Un arret coute e km a l'aller et e au retour.
 // Renvoie {plan, coutAchats, voyage, reste, utiles} — plan:null si infaisable, plan:[]
 // si aucun arret n'est necessaire ; chaque etape = {...cand, q (km achetes), litres,
 // plein (true = reservoir rempli), arrivee (km dans le reservoir en arrivant)}.
 // voyage = carburant CONSOMME au prix ou il a ete achete, plein de depart compris (null
 // si pd inconnu) ; reste = km dans le reservoir a l'arrivee (hors reserve : 0 des qu'il
-// y a un arret, A - total sinon).
+// y a un arret, A - total sinon) ; reserveEntamee = km pris sur la reserve pour atteindre la
+// premiere etape (champ present seulement si on y arrive sous la reserve : son arrivee est
+// alors negative).
 const ARRET = 0.8;     // EUR par arret : le temps perdu a une valeur, sinon micro-arrets
 const TOL_UTILES = 0.5; // EUR : un plan a moins de 0,50 EUR de l'optimum est « utile »
 const MAX_CAND = 240;  // au-dela, elagage : 2 moins cheres par tranche (DP en n^3)
@@ -52,8 +55,12 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   const pdDefaut = plan => pd15 != null ? pd15 : (plan && plan.length ? plan[0].p : prixBout(candTous, () => true));
   // g0 : carburant a bord au depart (km utiles) ; defaut A = on part le plein fait. S'il est
   // plus bas, la station du depart n'est qu'un candidat parmi d'autres : le plan y fait le
-  // plein seulement si c'est moins cher qu'en route (Eric, 24/10/2026).
-  const g0 = Math.max(0, Math.min(A, opts.g0 != null ? opts.g0 : A));
+  // plein seulement si c'est moins cher qu'en route (demande du 24/10/2026).
+  // gBrut : le meme, compte depuis le seuil de la reserve — negatif (jusqu'a -opts.reserve) si le
+  // reservoir est deja sous la reserve ; sans opts.reserve, gBrut = g0.
+  const rsv = Math.max(0, +opts.reserve || 0);
+  const gBrut = Math.max(-rsv, Math.min(A, opts.g0 != null ? opts.g0 : A));
+  const g0 = Math.max(0, gBrut);
   if(total <= g0){
     const pd = pdDefaut([]);
     return {plan: [], coutAchats: 0, voyage: pd == null ? null : pd * lkm * total, reste: g0 - total, utiles: new Set()};
@@ -61,6 +68,12 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   const km = i => i < 0 ? 0 : i >= n ? total : cand[i].km;
   const ex = i => (i < 0 || i >= n) ? 0 : cand[i].e;
   const leg = (j, i) => km(i) - km(j) + ex(j) + ex(i);
+  // Reservoir presque vide : si AUCUNE station n'est a portee avec g0 (ou si le reservoir est
+  // deja sous la reserve), la reserve (opts.reserve) peut etre entamee pour le seul premier
+  // troncon, jusqu'a une station — jamais jusqu'a l'arrivee. On y arrive avec un carburant
+  // negatif (sous la reserve) : l'achat « juste » ou « plein » la refait d'abord.
+  const aPortee = gBrut >= 0 && cand.some((c, i) => leg(-1, i) <= g0);
+  const g0Max = aPortee ? g0 : gBrut + rsv;   // portee du premier troncon vers une station
   const INF = Infinity;
   // Etats : vide[i] (arrive a i le reservoir vide) ; plein[i][s+1] (arrive a i avec
   // A - leg(s, i), dernier plein fait en s ; s = -1 : le depart). Cout = achats + arrets
@@ -72,18 +85,19 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   // etat courant en j : {g: carburant a l'arrivee, c: cout, cle: 'v' | s+1}
   const etats = j => {
     const l = [];
-    if(j < 0) return [{g: g0, c: 0, cle: 'd'}];
+    if(j < 0) return [{g: gBrut, c: 0, cle: 'd'}];
     if(vide[j] < INF) l.push({g: 0, c: vide[j], cle: 'v'});
-    plein[j].forEach((c, s1) => { if(c < INF) l.push({g: (s1 === 0 ? g0 : A) - leg(s1 - 1, j), c, cle: s1}); });
+    plein[j].forEach((c, s1) => { if(c < INF) l.push({g: (s1 === 0 ? gBrut : A) - leg(s1 - 1, j), c, cle: s1}); });
     return l;
   };
   const transitions = (j, g, c, cle, sur) => {
     // sur(k, cout, mode, q, reste) est appele pour chaque arrivee possible en k (k = FIN : l'arrivee)
     for(let k = j + 1; k <= FIN; k++){
-      if(km(k) - km(j) > A) break;
+      if(km(k) - km(j) > (j < 0 ? g0Max : A)) break;
       const L = leg(j, k);
+      // Le carburant du depart emmene jusqu'en k (une station seulement, si la reserve est entamee).
+      if(j < 0){ if(L <= (k === FIN ? g0 : g0Max)) sur(k, c, 'depart', 0, g - L); continue; }
       if(L > A) continue;
-      if(j < 0){ if(L <= g) sur(k, c, 'depart', 0, g - L); continue; }   // le carburant du depart emmene jusqu'en k
       const p = cand[j].p;
       const qJ = L - g;                                        // juste ce qu'il faut
       const risque = cand[j].risque || 0;                    // surcout fictif (prix fige, cf. app.js)
@@ -112,7 +126,7 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   let cur = finPred, g = finReste, kSuiv = FIN;
   while(cur && cur.j >= 0){
     const j = cur.j;
-    const arrivee = cur.cle === 'v' ? 0 : (cur.cle === 0 ? g0 : A) - leg(cur.cle - 1, j);
+    const arrivee = cur.cle === 'v' ? 0 : (cur.cle === 0 ? gBrut : A) - leg(cur.cle - 1, j);
     plan.unshift(Object.assign({}, cand[j], {q: cur.q, litres: cur.q * lkm, plein: cur.mode === 'plein', arrivee}));
     cur = cur.cle === 'v' ? pVide[j] : pPlein[j][cur.cle];
     kSuiv = j;
@@ -120,9 +134,11 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   const coutAchats = plan.reduce((t, e) => t + e.p * lkm * e.q, 0);
   // Carburant consomme : celui du depart (g0 km, compte au prix du depart, consomme en
   // entier des qu'il y a un arret) puis les achats, tous consommes (le dernier est « juste »).
+  // Reserve entamee : ce qui lui manque est rachete au premier arret, donc compte a son prix.
   const pd = pdDefaut(plan);
   const voyage = pd == null ? null : pd * lkm * g0 + coutAchats;
   const r = {plan, coutAchats, voyage, reste: finReste};
+  if(plan.length && plan[0].arrivee < -1e-9) r.reserveEntamee = plan[0].km + plan[0].e - g0;
   if(!opts.utiles) return r;
   // Passe arriere : cout optimal de chaque etat jusqu'a l'arrivee ; utile = station par
   // laquelle passe un plan a moins de TOL_UTILES de l'optimum (en plus de celles du plan).
@@ -138,7 +154,7 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
   };
   for(let j = n - 1; j >= 0; j--){
     bVide[j] = arriere(j, 0);
-    for(let s1 = 0; s1 <= j; s1++){ const L = leg(s1 - 1, j), G = s1 === 0 ? g0 : A; if(L <= G) bPlein[j][s1] = arriere(j, G - L); }
+    for(let s1 = 0; s1 <= j; s1++){ const L = leg(s1 - 1, j), G = s1 === 0 ? gBrut : A; if(L <= (s1 === 0 ? g0Max : A)) bPlein[j][s1] = arriere(j, G - L); }
   }
   const utiles = new Set(plan.map(e => e.s));
   for(let i = 0; i < n; i++){
@@ -152,7 +168,7 @@ function optimiserPlan(candTous, A, total, lkm, opts = {}){
 
 // Plein au depart et plein a l'arrivee. Le plan suppose un reservoir plein au
 // depart : encore faut-il savoir OU le faire, et ou refaire le plein en arrivant
-// (demande Eric, 17/09/2026). Pour chaque bout du trajet : la station la moins
+// (demande du 17/09/2026). Pour chaque bout du trajet : la station la moins
 // chere a moins de `rayon` km du debut (resp. de la fin) ; a prix egal, le plus
 // petit detour. null si aucune station dans le rayon.
 function pleinsExtremites(cand, total, rayon = 15){
@@ -182,7 +198,7 @@ function coutVoyage(cand, r){
   return r.voyage;
 }
 
-// Economie du plan par rapport a des pleins AU PLUS CHER du couloir (Eric, 24/10/2026 : « le
+// Economie du plan par rapport a des pleins AU PLUS CHER du couloir (demande du 24/10/2026 : « le
 // prix median est une absurdite ») : la reference est le MEME optimiserPlan sur les MEMES
 // candidats, tous les prix remplaces par le plus cher (plein de depart au plus cher aussi) —
 // ce qu'on aurait paye en s'arretant au pire endroit ; economie = reference - voyage reel.
@@ -190,7 +206,7 @@ function coutVoyage(cand, r){
 function economieVsPlusCher(cand, A, total, lkm, voyage, opts = {}){
   const prix = prixMax(cand);
   if(prix == null || voyage == null) return null;
-  const rm = optimiserPlan(cand.map(c => Object.assign({}, c, {p: prix})), A, total, lkm, {pd: prix, g0: opts.g0});
+  const rm = optimiserPlan(cand.map(c => Object.assign({}, c, {p: prix})), A, total, lkm, {pd: prix, g0: opts.g0, reserve: opts.reserve});
   if(rm.plan === null || rm.voyage == null) return null;
   return {economie: rm.voyage - voyage, prix, reference: rm.voyage};
 }
@@ -322,7 +338,10 @@ function optimiserPlanElectrique(bornes, A, total, lkm, veh, opts = {}){
   const depuis = (j, e, m, r) => {
     for(let k = j + 1; k <= FIN; k++){
       const c = cons(j, k), besoin = c + (k === FIN ? Eai : Ri);
-      if(besoin > Bi) { if(c > Bi) break; continue; }   // inatteignable meme batterie pleine
+      // Arret de la boucle sur la seule distance le long de la route (croissante avec k) : le
+      // cout c depend du detour de chaque borne, une borne lointaine ne dit rien des suivantes.
+      if(kwhKm * (km(k) - km(j)) > Bi) break;
+      if(besoin > Bi) continue;                         // inatteignable meme batterie pleine
       if(j < 0){ if(e >= besoin) poser(k, e - c, m, r, null); continue; }
       const P = cand[j].kw;
       // Cibles : juste ce qu'il faut, 80 %, 100 % (jamais « ne pas charger » : on ne

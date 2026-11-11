@@ -59,7 +59,7 @@ MAPLIBRE = {
         "sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp"),
 }
 # Scripts du gabarit, dans l'ordre d'assemblage (un seul <script> a la fin de la page).
-SCRIPTS = ["plan.js", "conso.js", "irve.js", "bornes.js", "partage.js", "es.js", "signalements.js",
+SCRIPTS = ["plan.js", "conso.js", "irve.js", "bornes.js", "partage.js", "es.js", "lieux.js", "signalements.js",
            "ui/icones.js", "ui/feuilles.js", "ui/fond.js", "ui/assistant.js", "app.js"]
 # Service worker (appli installable, hors-ligne, 30/10/2026) : pwa/sw.js = regles pures (testees
 # en Node) + corps du worker, assembles ici en UN fichier et commites avec le manifeste et les
@@ -174,6 +174,16 @@ def lire(nom):
         return f.read()
 
 
+def json_inline(valeur, **options):
+    """JSON a inliner dans le <script> de la page (snapshot du flux, table des provinces) :
+    une chaine de texte libre (adresse, ville) contenant « </script> » refermerait le script,
+    « <!-- » suivi de « <script » empecherait sa fermeture, et un « <script » de plus ferait
+    echouer le compte de csp_meta (ou, la balise refermee, y serait hache donc autorise).
+    Chaque « < » est donc ecrit \\u003c : la meme chaine pour JavaScript comme pour JSON,
+    sans aucune suite de caracteres que le lecteur HTML reconnaisse."""
+    return json.dumps(valeur, ensure_ascii=False, **options).replace("<", "\\u003c")
+
+
 def assembler_sw():
     """pwa/sw.js : les regles (src/pwa-strategie.js, pures, globales dans le worker) puis le
     corps (src/sw.js), dans un seul fichier, comme la page. Ecrit seulement s'il change."""
@@ -241,12 +251,12 @@ def main():
     for token, val in (("__LAT__", repr(a.lat)), ("__LON__", repr(a.lon)),
                        ("__NOM__", a.nom), ("__RAYON__", str(a.rayon)),
                        ("__SELECT__", SELECT), ("__API__", API),
-                       ("__ES_PROVINCIAS__", json.dumps(json.loads(lire("es-provincias.json")),
-                                                        ensure_ascii=False, separators=(",", ":"))),
+                       ("__ES_PROVINCIAS__", json_inline(json.loads(lire("es-provincias.json")),
+                                                         separators=(",", ":"))),
                        ("__SIGNALEMENTS_URL__", sig_url),
                        ("__SNAPDATE__", datetime.now().strftime("%d/%m/%Y %H:%M")),
                        ("__BUILD__", datetime.now().strftime("%Y%m%d-%H%M%S")),
-                       ("__SNAP__", json.dumps(rows, ensure_ascii=False))):
+                       ("__SNAP__", json_inline(rows))):
         html = html.replace(token, val)
     assert "__ES_PROVINCIAS__" not in html, "table des provinces espagnoles non inlinee"
     assert "__SIGNALEMENTS_URL__" not in html, "URL du service de signalements non inlinee"

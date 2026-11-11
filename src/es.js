@@ -28,7 +28,7 @@ const ES_EMPRISE_MAX = 3;          // degres de latitude : au-dela, trop large p
 // Table des 52 provinces : id -> [nom, nb de stations, latMin, latMax, lonMin, lonMax], calculee
 // le 28/10/2026 depuis le fichier complet (src/es-provincias.json). Sous Node : lue du fichier ;
 // dans la page : inlinee par generate.py a la place du jeton (ci-dessous).
-// Table v2 (Eric, 30/10/2026) : bornes ROBUSTES calculees sur 11 422 stations (1er-99e centile
+// Table v2 (demande du 30/10/2026) : bornes ROBUSTES calculees sur 11 422 stations (1er-99e centile
 // par axe, marge 0,05°). La v1 (min/max bruts) etirait cinq boites jusqu'a l'equateur : stations
 // avec latitude ou longitude a 0 (Barcelona, Madrid, Murcia, Cantabria) et valeurs aberrantes
 // (Pontevedra). Les memes stations sont ecartees a l'ingestion (normaliserStationES, ES_ENVELOPPE).
@@ -142,7 +142,7 @@ function reglesHorario(horario){
   return regles.length ? regles : null;
 }
 // true (ouvert), false (ferme a cette date), null (horaire inconnu ou illisible).
-function ouvertA(horario, date){
+function ouvertES(horario, date){
   const regles = reglesHorario(horario);
   if(!regles || !(date instanceof Date) || isNaN(date)) return null;
   const jour = (date.getDay() + 6) % 7, min = date.getHours() * 60 + date.getMinutes();
@@ -194,8 +194,97 @@ function enEspagne(bbox, table = ES_PROVINCIAS){
   return recouvrementsProvinces(table, bbox).length > 0;
 }
 
+// ---------- Villes d'Espagne saisissables comme depart ou arrivee (releve du 11/11/2026) ----------
+// Les geocodeurs de la page (Geoplateforme, api-adresse) ne connaissent que la France :
+// « Barcelone » rendait une voie du Var, « Figueres » une rue de Fort-de-France. Sans hote
+// nouveau dans la CSP, la page embarque cette table, consultee AVANT le geocodage (villeES) :
+// la capitale de chacune des 47 provinces de la peninsule et les villes de la frontiere.
+// Iles, Ceuta et Melilla absentes (aucune route depuis la France).
+// Ligne : [id de province (ES_PROVINCIAS), latitude, longitude, nom affiche, autres noms…].
+// Coordonnees du centre-ville au millieme de degre (~100 m), saisies a la main le 11/11/2026
+// (aucun geocodeur de l'Espagne n'est joignable par la page) et controlees deux fois : chaque
+// ville est dans la boite de sa province (test), chaque point est a moins de 110 m d'une rue
+// du centre selon le service d'itineraire de secours (valhalla1.openstreetmap.de/locate).
+const ES_VILLES = [
+  ['01', 42.847, -2.673, 'Vitoria-Gasteiz', 'Vitoria', 'Gasteiz'],
+  ['02', 38.995, -1.856, 'Albacete'],
+  ['03', 38.345, -0.483, 'Alicante', 'Alacant'],
+  ['04', 36.840, -2.467, 'Almería'],
+  ['05', 40.656, -4.700, 'Ávila'],
+  ['06', 38.879, -6.970, 'Badajoz'],
+  ['08', 41.387, 2.170, 'Barcelona', 'Barcelone'],
+  ['09', 42.341, -3.702, 'Burgos'],
+  ['10', 39.475, -6.372, 'Cáceres'],
+  ['11', 36.527, -6.289, 'Cádiz', 'Cadix'],
+  ['12', 39.986, -0.038, 'Castellón de la Plana', 'Castellón', 'Castelló', 'Castelló de la Plana'],
+  ['13', 38.986, -3.927, 'Ciudad Real'],
+  ['14', 37.884, -4.779, 'Córdoba', 'Cordoue'],
+  ['15', 43.371, -8.396, 'A Coruña', 'La Coruña', 'La Corogne', 'Coruña'],
+  ['16', 40.070, -2.137, 'Cuenca'],
+  ['17', 41.983, 2.824, 'Girona', 'Gérone', 'Gerona'],
+  ['18', 37.177, -3.599, 'Granada', 'Grenade'],
+  ['19', 40.633, -3.167, 'Guadalajara'],
+  ['20', 43.318, -1.981, 'San Sebastián', 'Donostia', 'Donostia-San Sebastián', 'Saint-Sébastien'],
+  ['21', 37.261, -6.945, 'Huelva'],
+  ['22', 42.136, -0.409, 'Huesca'],
+  ['23', 37.770, -3.790, 'Jaén'],
+  ['24', 42.599, -5.572, 'León'],
+  ['25', 41.617, 0.622, 'Lleida', 'Lérida'],
+  ['26', 42.465, -2.445, 'Logroño'],
+  ['27', 43.010, -7.556, 'Lugo'],
+  ['28', 40.417, -3.703, 'Madrid'],
+  ['29', 36.720, -4.420, 'Málaga'],
+  ['30', 37.987, -1.130, 'Murcia', 'Murcie'],
+  ['31', 42.817, -1.644, 'Pamplona', 'Pampelune', 'Iruña'],
+  ['32', 42.336, -7.864, 'Ourense', 'Orense'],
+  ['33', 43.361, -5.849, 'Oviedo'],
+  ['34', 42.010, -4.533, 'Palencia'],
+  ['36', 42.431, -8.644, 'Pontevedra'],
+  ['37', 40.965, -5.664, 'Salamanca', 'Salamanque'],
+  ['39', 43.462, -3.810, 'Santander'],
+  ['40', 40.948, -4.118, 'Segovia', 'Ségovie'],
+  ['41', 37.389, -5.984, 'Sevilla', 'Séville'],
+  ['42', 41.764, -2.465, 'Soria'],
+  ['43', 41.119, 1.245, 'Tarragona', 'Tarragone'],
+  ['44', 40.344, -1.107, 'Teruel'],
+  ['45', 39.857, -4.024, 'Toledo', 'Tolède'],
+  ['46', 39.470, -0.376, 'Valencia', 'València', 'Valence'],
+  ['47', 41.652, -4.724, 'Valladolid'],
+  ['48', 43.263, -2.935, 'Bilbao', 'Bilbo'],
+  ['49', 41.503, -5.745, 'Zamora'],
+  ['50', 41.649, -0.887, 'Zaragoza', 'Saragosse'],
+  // Frontiere : Catalogne, val d'Aran, Aragon, Pays basque.
+  ['17', 42.267, 2.961, 'Figueres', 'Figueras'],
+  ['17', 42.419, 2.875, 'La Jonquera', 'La Junquera', 'La Jonquère'],
+  ['17', 42.427, 3.158, 'Portbou', 'Port-Bou'],
+  ['17', 42.264, 3.177, 'Roses', 'Rosas'],
+  ['17', 42.432, 1.928, 'Puigcerdà'],
+  ['25', 42.702, 0.795, 'Vielha'],
+  ['22', 42.570, -0.550, 'Jaca'],
+  ['20', 43.339, -1.789, 'Irun'],
+];
+// Noms qui sont AUSSI ceux d'une commune francaise (verifie au geocodeur le 11/11/2026 : Valence
+// dans la Drome, Grenade en Haute-Garonne, Cadix dans le Tarn, Leon dans les Landes,
+// Saint-Sebastien dans la Creuse…) : seuls, ils restent francais ; ils ne designent la ville
+// espagnole que suivis du pays (« León Espagne », « Valence, Espagne »).
+const ES_HOMONYMES_FR = ['valence', 'grenade', 'cadix', 'leon', 'saint sebastien'];
+const cleVilleES = x => String(x == null ? '' : x).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, ' ').trim();
+const ES_PAR_NOM = new Map();
+ES_VILLES.forEach(v => v.slice(3).forEach(nom => ES_PAR_NOM.set(cleVilleES(nom), v)));
+
+// Ville espagnole de la table pour une saisie (« Barcelone », « barcelona », « Girona, Espagne »),
+// sinon null : {lon, lat, label, pays: 'ES'} — `pays` dit a l'appelant de tracer hors IGN.
+function villeES(q){
+  const cle = cleVilleES(q), sansPays = cle.replace(/ (espagne|espana|spain)$/, '');
+  const v = ES_PAR_NOM.get(sansPays);
+  if(!v || (sansPays === cle && ES_HOMONYMES_FR.includes(cle))) return null;
+  return {lon: v[2], lat: v[1], label: v[3] + ' (Espagne)', pays: 'ES'};
+}
+
 // Export Node (tests) ; sans effet dans la page, ou `module` n'existe pas.
 if(typeof module !== 'undefined' && module.exports)
-  module.exports = {nombreES, fechaISO, normaliserStationES, ouvertA, resumerHorario, reglesHorario,
+  module.exports = {nombreES, fechaISO, normaliserStationES, ouvertES, resumerHorario, reglesHorario,
                     recouvrementsProvinces, provincesPourEmprise, enEspagne,
-                    ES_PROVINCIAS, ES_CARBURANTS, ES_CLES, ES_URL, ES_HOTE, ES_MAX_PROVINCES, ES_CACHE_MS, ES_EMPRISE_MAX, ES_ENVELOPPE, coordsES};
+                    ES_PROVINCIAS, ES_CARBURANTS, ES_CLES, ES_URL, ES_HOTE, ES_MAX_PROVINCES, ES_CACHE_MS, ES_EMPRISE_MAX, ES_ENVELOPPE, coordsES,
+                    ES_VILLES, ES_HOMONYMES_FR, villeES};

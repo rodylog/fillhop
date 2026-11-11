@@ -1,0 +1,2395 @@
+{
+ "_note": "Réponses réelles de https://data.geopf.fr/geocodage/search/?q=…&limit=5, relevées le 11/11/2026 (clé = saisie ; « |municipality » = même requête avec &type=municipality). Fixture des tests de src/lieux.js : ne pas retoucher à la main.",
+ "Narbonne": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.648608,
+      47.310907
+     ]
+    },
+    "properties": {
+     "label": "Narbonne 37300 Joué-lès-Tours",
+     "score": 0.9620690909090909,
+     "id": "37122_atdmrk",
+     "banId": "01d54709-5675-461e-94e6-71177076668a",
+     "name": "Narbonne",
+     "postcode": "37300",
+     "citycode": "37122",
+     "x": 522380.59,
+     "y": 6692709.79,
+     "city": "Joué-lès-Tours",
+     "context": "37, Indre-et-Loire, Centre-Val de Loire",
+     "type": "street",
+     "importance": 0.58276,
+     "depcode": "37",
+     "street": "Narbonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.05014,
+      43.166709
+     ]
+    },
+    "properties": {
+     "label": "Narbonne",
+     "score": 0.95392,
+     "id": "11262",
+     "banId": "dcee1928-7e0c-439e-9e6b-cb8f3dec3d54",
+     "type": "municipality",
+     "name": "Narbonne",
+     "postcode": "11100",
+     "citycode": "11262",
+     "x": 704080.35,
+     "y": 6229720.4,
+     "population": 57587,
+     "city": "Narbonne",
+     "context": "11, Aude, Occitanie",
+     "importance": 0.49312,
+     "depcode": "11",
+     "municipality": "Narbonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.710595,
+      45.213935
+     ]
+    },
+    "properties": {
+     "label": "Narbonne 38950 Saint-Martin-le-Vinoux",
+     "score": 0.9468518181818181,
+     "type": "locality",
+     "importance": 0.41537,
+     "id": "38423_y4z01q",
+     "banId": "23e9a63d-b882-4547-a983-4e6fc515b858",
+     "name": "Narbonne",
+     "postcode": "38950",
+     "citycode": "38423",
+     "x": 912735.78,
+     "y": 6460830.71,
+     "city": "Saint-Martin-le-Vinoux",
+     "context": "38, Isère, Auvergne-Rhône-Alpes",
+     "depcode": "38",
+     "locality": "Narbonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.628794,
+      48.593164
+     ]
+    },
+    "properties": {
+     "label": "Narbonne 35120 Saint-Marcan",
+     "score": 0.9466827272727271,
+     "id": "35291_ttcmxw",
+     "banId": "1dd0b38a-14d8-4aae-a875-69b967d8ece3",
+     "name": "Narbonne",
+     "postcode": "35120",
+     "citycode": "35291",
+     "x": 358846.57,
+     "y": 6842552.99,
+     "city": "Saint-Marcan",
+     "context": "35, Ille-et-Vilaine, Bretagne",
+     "type": "street",
+     "importance": 0.41351,
+     "depcode": "35",
+     "street": "Narbonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.824002,
+      47.127182
+     ]
+    },
+    "properties": {
+     "label": "Narbonne 37240 Manthelan",
+     "score": 0.9419572727272727,
+     "id": "37143_oc9ur5",
+     "banId": "998ec5fe-2ab7-4589-9171-8448e25db48c",
+     "name": "Narbonne",
+     "postcode": "37240",
+     "citycode": "37143",
+     "x": 535063.7,
+     "y": 6671929.92,
+     "city": "Manthelan",
+     "context": "37, Indre-et-Loire, Centre-Val de Loire",
+     "type": "street",
+     "importance": 0.36153,
+     "depcode": "37",
+     "street": "Narbonne",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Narbonne"
+ },
+ "Vienne": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.125658,
+      45.802059
+     ]
+    },
+    "properties": {
+     "label": "Vienne 87700 Aixe-sur-Vienne",
+     "score": 0.9580045454545455,
+     "id": "87001_ug8s3m",
+     "banId": "9b82b6b2-fd01-4ad7-bf57-eb4dd3fa908f",
+     "name": "Vienne",
+     "postcode": "87700",
+     "citycode": "87001",
+     "x": 554431.04,
+     "y": 6524220.21,
+     "city": "Aixe-sur-Vienne",
+     "context": "87, Haute-Vienne, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.53805,
+     "depcode": "87",
+     "street": "Vienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.88366,
+      45.526486
+     ]
+    },
+    "properties": {
+     "label": "Vienne",
+     "score": 0.9512181818181817,
+     "id": "38544",
+     "banId": "e82c6dd6-0a0f-41ff-bfb2-8cef76f392bf",
+     "type": "municipality",
+     "name": "Vienne",
+     "postcode": "38200",
+     "citycode": "38544",
+     "x": 847022.46,
+     "y": 6493643.3,
+     "population": 31778,
+     "city": "Vienne",
+     "context": "38, Isère, Auvergne-Rhône-Alpes",
+     "importance": 0.4634,
+     "depcode": "38",
+     "municipality": "Vienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.085423,
+      46.34932
+     ]
+    },
+    "properties": {
+     "label": "vienne 85450 Sainte-Radégonde-des-Noyers",
+     "score": 0.9417654545454544,
+     "id": "85267_9mkl69",
+     "banId": "bb033f99-f531-4530-92f1-4f3ca20a2ce9",
+     "name": "vienne",
+     "postcode": "85450",
+     "citycode": "85267",
+     "x": 385964.29,
+     "y": 6591392.06,
+     "city": "Sainte-Radégonde-des-Noyers",
+     "context": "85, Vendée, Pays de la Loire",
+     "type": "street",
+     "importance": 0.35942,
+     "depcode": "85",
+     "street": "vienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.708452,
+      48.543507
+     ]
+    },
+    "properties": {
+     "label": "Vienne 35120 Baguer-Pican",
+     "score": 0.9412136363636362,
+     "id": "35010_r2i7he",
+     "banId": "509a7c4e-5c05-4ae8-84f8-0b42a7e174c4",
+     "name": "Vienne",
+     "postcode": "35120",
+     "citycode": "35010",
+     "x": 352653.51,
+     "y": 6837389.67,
+     "city": "Baguer-Pican",
+     "context": "35, Ille-et-Vilaine, Bretagne",
+     "type": "street",
+     "importance": 0.35335,
+     "depcode": "35",
+     "street": "Vienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.733871,
+      48.562588
+     ]
+    },
+    "properties": {
+     "label": "Vienne 35120 Mont-Dol",
+     "score": 0.9409390909090909,
+     "id": "35186_hfrjae",
+     "banId": "fc46a155-e2e6-4834-8f98-706ccb8c4d97",
+     "name": "Vienne",
+     "postcode": "35120",
+     "citycode": "35186",
+     "x": 350907.66,
+     "y": 6839619.13,
+     "city": "Mont-Dol",
+     "context": "35, Ille-et-Vilaine, Bretagne",
+     "type": "street",
+     "importance": 0.35033,
+     "depcode": "35",
+     "street": "Vienne",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Vienne"
+ },
+ "12 rue de la Paix Paris": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.331303,
+      48.869141
+     ]
+    },
+    "properties": {
+     "label": "12 Rue de la Paix 75002 Paris",
+     "score": 0.9640599999999998,
+     "housenumber": "12",
+     "id": "75102_6998_00012",
+     "banId": "eb3fbab2-8154-4f2c-af66-ee299e9dfcea",
+     "name": "12 Rue de la Paix",
+     "postcode": "75002",
+     "citycode": "75102",
+     "x": 650947.59,
+     "y": 6863442.5,
+     "city": "Paris",
+     "district": "Paris 2e Arrondissement",
+     "context": "75, Paris, Île-de-France",
+     "type": "housenumber",
+     "importance": 0.60466,
+     "depcode": "75",
+     "street": "Rue de la Paix",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.188395,
+      48.975493
+     ]
+    },
+    "properties": {
+     "label": "12 Rue de la Paix 95240 Cormeilles-en-Parisis",
+     "score": 0.6516231404958677,
+     "housenumber": "12",
+     "id": "95176_0960_00012",
+     "banId": "9f1a8a07-5d6d-46cc-8810-ceba4cfdfe80",
+     "name": "12 Rue de la Paix",
+     "postcode": "95240",
+     "citycode": "95176",
+     "x": 640586.44,
+     "y": 6875366.65,
+     "city": "Cormeilles-en-Parisis",
+     "context": "95, Val-d'Oise, Île-de-France",
+     "type": "housenumber",
+     "importance": 0.6224,
+     "depcode": "95",
+     "street": "Rue de la Paix",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.581887,
+      50.521439
+     ]
+    },
+    "properties": {
+     "label": "12 Rue de la Paix 62520 Le Touquet-Paris-Plage",
+     "score": 0.6462958677685949,
+     "housenumber": "12",
+     "id": "62826_0930_00012",
+     "banId": "f99643f3-94ab-4be3-a027-14f79151abc0",
+     "name": "12 Rue de la Paix",
+     "postcode": "62520",
+     "citycode": "62826",
+     "x": 599280.81,
+     "y": 7048032.82,
+     "city": "Le Touquet-Paris-Plage",
+     "context": "62, Pas-de-Calais, Hauts-de-France",
+     "type": "housenumber",
+     "importance": 0.5638,
+     "depcode": "62",
+     "street": "Rue de la Paix",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.695663,
+      45.172618
+     ]
+    },
+    "properties": {
+     "label": "Rue de la Paix 38170 Seyssinet-Pariset",
+     "score": 0.532367438016529,
+     "id": "38485_0510",
+     "banId": "47d4db59-663b-42a2-a00f-88bfb1e25e98",
+     "name": "Rue de la Paix",
+     "postcode": "38170",
+     "citycode": "38485",
+     "x": 911720.95,
+     "y": 6456204.62,
+     "city": "Seyssinet-Pariset",
+     "context": "38, Isère, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.53786,
+     "depcode": "38",
+     "street": "Rue de la Paix",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.187002,
+      48.975979
+     ]
+    },
+    "properties": {
+     "label": "12 Impasse de la Paix 95240 Cormeilles-en-Parisis",
+     "score": 0.4625227272727272,
+     "housenumber": "12",
+     "id": "95176_0955_00012",
+     "banId": "b317d5c0-1a14-49a7-a174-3857698aa2c0",
+     "name": "12 Impasse de la Paix",
+     "postcode": "95240",
+     "citycode": "95176",
+     "x": 640485.03,
+     "y": 6875421.75,
+     "city": "Cormeilles-en-Parisis",
+     "context": "95, Val-d'Oise, Île-de-France",
+     "type": "housenumber",
+     "importance": 0.58775,
+     "depcode": "95",
+     "street": "Impasse de la Paix",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "12 rue de la Paix Paris"
+ },
+ "Barcelone": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.827134,
+      43.46806
+     ]
+    },
+    "properties": {
+     "label": "Barcelone 83470 Saint-Maximin-la-Sainte-Baume",
+     "score": 0.9536027272727273,
+     "id": "83116_sfsg6v",
+     "banId": "4d32f0b7-a12e-419c-9505-02bce9a7dfb1",
+     "name": "Barcelone",
+     "postcode": "83470",
+     "citycode": "83116",
+     "x": 928821.28,
+     "y": 6267315.02,
+     "city": "Saint-Maximin-la-Sainte-Baume",
+     "context": "83, Var, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.48963,
+     "depcode": "83",
+     "street": "Barcelone",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.505447,
+      43.302292
+     ]
+    },
+    "properties": {
+     "label": "Barcelone 31550 Cintegabelle",
+     "score": 0.9436536363636363,
+     "id": "31145_3iklkc",
+     "banId": "01fc648f-6bd6-47f5-9628-09cc38697dc7",
+     "name": "Barcelone",
+     "postcode": "31550",
+     "citycode": "31145",
+     "x": 578667.19,
+     "y": 6245940.22,
+     "city": "Cintegabelle",
+     "context": "31, Haute-Garonne, Occitanie",
+     "type": "street",
+     "importance": 0.38019,
+     "depcode": "31",
+     "street": "Barcelone",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.586078,
+      47.053884
+     ]
+    },
+    "properties": {
+     "label": "Barcelone 37800 Maillé",
+     "score": 0.936010909090909,
+     "id": "37142_td2hth",
+     "name": "Barcelone",
+     "postcode": "37800",
+     "citycode": "37142",
+     "x": 516786.03,
+     "y": 6664316.46,
+     "city": "Maillé",
+     "context": "37, Indre-et-Loire, Centre-Val de Loire",
+     "type": "street",
+     "importance": 0.29612,
+     "depcode": "37",
+     "street": "Barcelone",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.46944,
+      44.581288
+     ]
+    },
+    "properties": {
+     "label": "Barcelonne 47800 Montignac-de-Lauzun",
+     "score": 0.7511863636363635,
+     "id": "47188_gk5ud2",
+     "banId": "b23e3815-15cd-4c54-8738-f18a7c2ca882",
+     "name": "Barcelonne",
+     "postcode": "47800",
+     "citycode": "47188",
+     "x": 499137.39,
+     "y": 6390130.53,
+     "city": "Montignac-de-Lauzun",
+     "context": "47, Lot-et-Garonne, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.26305,
+     "depcode": "47",
+     "street": "Barcelonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.048428,
+      44.868469
+     ]
+    },
+    "properties": {
+     "label": "Barcelonne",
+     "score": 0.7487472727272726,
+     "id": "26024",
+     "banId": "ffa337de-3634-4e4d-960e-af84f4e8781c",
+     "type": "municipality",
+     "name": "Barcelonne",
+     "postcode": "26120",
+     "citycode": "26024",
+     "x": 861775.68,
+     "y": 6420908.72,
+     "population": 335,
+     "city": "Barcelonne",
+     "context": "26, Drôme, Auvergne-Rhône-Alpes",
+     "importance": 0.23622,
+     "depcode": "26",
+     "municipality": "Barcelonne",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Barcelone"
+ },
+ "Figueres": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -61.083926,
+      14.605805
+     ]
+    },
+    "properties": {
+     "label": "Rue Charles Figuères 97200 Fort-de-France",
+     "score": 0.6905690909090908,
+     "id": "97209_0742",
+     "banId": "42ec9463-808d-4352-acbc-d85c66ba4f5d",
+     "name": "Rue Charles Figuères",
+     "postcode": "97200",
+     "citycode": "97209",
+     "x": 706398.59,
+     "y": 1615597.53,
+     "city": "Fort-de-France",
+     "context": "972, Martinique",
+     "type": "street",
+     "importance": 0.59626,
+     "depcode": "97",
+     "street": "Rue Charles Figuères",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.074272,
+      42.520523
+     ]
+    },
+    "properties": {
+     "label": "Rue Jean Figueres 66190 Collioure",
+     "score": 0.681220909090909,
+     "id": "66053_0122",
+     "banId": "16839f63-6893-4947-b7fa-ad0fdd893241",
+     "name": "Rue Jean Figueres",
+     "postcode": "66190",
+     "citycode": "66053",
+     "x": 706111.78,
+     "y": 6157860.98,
+     "city": "Collioure",
+     "context": "66, Pyrénées-Orientales, Occitanie",
+     "type": "street",
+     "importance": 0.49343,
+     "depcode": "66",
+     "street": "Rue Jean Figueres",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.05639,
+      43.378103
+     ]
+    },
+    "properties": {
+     "label": "Rue Figuères 65500 Vic-en-Bigorre",
+     "score": 0.6749381818181818,
+     "id": "65460_0510",
+     "banId": "e52f2d23-993c-4dc7-8ec9-d6adb1db57bc",
+     "name": "Rue Figuères",
+     "postcode": "65500",
+     "citycode": "65460",
+     "x": 461383.05,
+     "y": 6257667.34,
+     "city": "Vic-en-Bigorre",
+     "context": "65, Hautes-Pyrénées, Occitanie",
+     "type": "street",
+     "importance": 0.42432,
+     "depcode": "65",
+     "street": "Rue Figuères",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.556538,
+      43.184521
+     ]
+    },
+    "properties": {
+     "label": "Rue des Figuéres 11700 Capendu",
+     "score": 0.6739281818181818,
+     "id": "11068_0035",
+     "banId": "4c9b4038-771a-4593-8658-df31de4d4274",
+     "name": "Rue des Figuéres",
+     "postcode": "11700",
+     "citycode": "11068",
+     "x": 663922.78,
+     "y": 6231800.67,
+     "city": "Capendu",
+     "context": "11, Aude, Occitanie",
+     "type": "street",
+     "importance": 0.41321,
+     "depcode": "11",
+     "street": "Rue des Figuéres",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.79626,
+      42.509774
+     ]
+    },
+    "properties": {
+     "label": "Impasse Camp Figueres 66490 Saint-Jean-Pla-de-Corts",
+     "score": 0.6728836363636362,
+     "id": "66178_uri0i4",
+     "banId": "4cd5cc9c-d6ea-4de2-b7bb-51527f7af616",
+     "name": "Impasse Camp Figueres",
+     "postcode": "66490",
+     "citycode": "66178",
+     "x": 683231.34,
+     "y": 6156684,
+     "city": "Saint-Jean-Pla-de-Corts",
+     "context": "66, Pyrénées-Orientales, Occitanie",
+     "type": "street",
+     "importance": 0.40172,
+     "depcode": "66",
+     "street": "Impasse Camp Figueres",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Figueres"
+ },
+ "Figueres, Espagne": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.584908,
+      43.645814
+     ]
+    },
+    "properties": {
+     "label": "Rue Espagne 32000 Auch",
+     "score": 0.43844855614973255,
+     "id": "32013_1780",
+     "banId": "aed9783d-f4c0-4b6f-aac5-dc4305c1da35",
+     "name": "Rue Espagne",
+     "postcode": "32000",
+     "citycode": "32013",
+     "x": 505121.26,
+     "y": 6285954.96,
+     "city": "Auch",
+     "context": "32, Gers, Occitanie",
+     "type": "street",
+     "importance": 0.58764,
+     "depcode": "32",
+     "street": "Rue Espagne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.477266,
+      43.489352
+     ]
+    },
+    "properties": {
+     "label": "Rue d'Espagne 64100 Bayonne",
+     "score": 0.4087457894736842,
+     "id": "64102_0790",
+     "banId": "c3e7be74-aec4-4f65-a2b7-e1f86499a2b9",
+     "name": "Rue d'Espagne",
+     "postcode": "64100",
+     "citycode": "64102",
+     "x": 337871.96,
+     "y": 6275854.18,
+     "city": "Bayonne",
+     "context": "64, Pyrénées-Atlantiques, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.70673,
+     "depcode": "64",
+     "street": "Rue d'Espagne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.180097,
+      50.68442
+     ]
+    },
+    "properties": {
+     "label": "Rue d'Espagne 59100 Roubaix",
+     "score": 0.4080457894736842,
+     "id": "59512_1960",
+     "banId": "1b27a672-844b-4c39-9204-4a5ba54aff24",
+     "name": "Rue d'Espagne",
+     "postcode": "59100",
+     "citycode": "59512",
+     "x": 712750.36,
+     "y": 7065303.02,
+     "city": "Roubaix",
+     "context": "59, Nord, Hauts-de-France",
+     "type": "street",
+     "importance": 0.69903,
+     "depcode": "59",
+     "street": "Rue d'Espagne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.54397,
+      47.228827
+     ]
+    },
+    "properties": {
+     "label": "Rue d'Espagne 44000 Nantes",
+     "score": 0.4076976076555024,
+     "id": "44109_2896",
+     "banId": "9985be1c-edac-4290-b523-346fe80748ef",
+     "name": "Rue d'Espagne",
+     "postcode": "44000",
+     "citycode": "44109",
+     "x": 356372,
+     "y": 6690837.44,
+     "city": "Nantes",
+     "context": "44, Loire-Atlantique, Pays de la Loire",
+     "type": "street",
+     "importance": 0.6952,
+     "depcode": "44",
+     "street": "Rue d'Espagne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.711816,
+      44.79241
+     ]
+    },
+    "properties": {
+     "label": "Rue d'Espagne 33600 Pessac",
+     "score": 0.40713488038277507,
+     "id": "33318_1154",
+     "banId": "b1ded6ab-3d99-4d02-91ac-8fa9e56416f9",
+     "name": "Rue d'Espagne",
+     "postcode": "33600",
+     "citycode": "33318",
+     "x": 406535.49,
+     "y": 6417261.07,
+     "city": "Pessac",
+     "context": "33, Gironde, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.68901,
+     "depcode": "33",
+     "street": "Rue d'Espagne",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Figueres, Espagne"
+ },
+ "Madrid": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.207448,
+      45.562042
+     ]
+    },
+    "properties": {
+     "label": "Madrid 16300 Lignières-Ambleville",
+     "score": 0.9369799999999999,
+     "id": "16186_fjfzix",
+     "banId": "dfb04962-eed8-4f93-8731-f2cc9256bc73",
+     "name": "Madrid",
+     "postcode": "16300",
+     "citycode": "16186",
+     "oldcitycode": "16010",
+     "x": 449859.37,
+     "y": 6500919.23,
+     "city": "Lignières-Ambleville",
+     "oldcity": "Ambleville",
+     "context": "16, Charente, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.30678,
+     "depcode": "16",
+     "street": "Madrid",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.306141,
+      46.789333
+     ]
+    },
+    "properties": {
+     "label": "Madrid 79600 Boussais",
+     "score": 0.9350072727272727,
+     "id": "79047_c07zlo",
+     "banId": "d5e1d132-fd99-4ec3-887e-e9ae814b2617",
+     "name": "Madrid",
+     "postcode": "79600",
+     "citycode": "79047",
+     "x": 447871.95,
+     "y": 6637412.02,
+     "city": "Boussais",
+     "context": "79, Deux-Sèvres, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.28508,
+     "depcode": "79",
+     "street": "Madrid",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.594977,
+      44.831085
+     ]
+    },
+    "properties": {
+     "label": "Rue de Madrid 33000 Bordeaux",
+     "score": 0.7070863636363636,
+     "id": "33063_5815",
+     "banId": "c2a53dcc-f9cc-4960-b076-765a2dceb1b9",
+     "name": "Rue de Madrid",
+     "postcode": "33000",
+     "citycode": "33063",
+     "x": 415962.06,
+     "y": 6421124.9,
+     "city": "Bordeaux",
+     "context": "33, Gironde, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.77795,
+     "depcode": "33",
+     "street": "Rue de Madrid",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.06143,
+      49.250024
+     ]
+    },
+    "properties": {
+     "label": "Rue de Madrid 51100 Reims",
+     "score": 0.7024745454545454,
+     "id": "51454_5775",
+     "banId": "d86ac874-aaf6-4586-becd-1fe3c8273920",
+     "name": "Rue de Madrid",
+     "postcode": "51100",
+     "citycode": "51454",
+     "x": 777290.6,
+     "y": 6906114.67,
+     "city": "Reims",
+     "context": "51, Marne, Grand Est",
+     "type": "street",
+     "importance": 0.72722,
+     "depcode": "51",
+     "street": "Rue de Madrid",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.325619,
+      49.885261
+     ]
+    },
+    "properties": {
+     "label": "Rue de Madrid 80090 Amiens",
+     "score": 0.7014027272727272,
+     "id": "80021_5280",
+     "banId": "f24c4f49-5730-4649-a750-4f9f1bb31681",
+     "name": "Rue de Madrid",
+     "postcode": "80090",
+     "citycode": "80021",
+     "x": 651496.12,
+     "y": 6976488.83,
+     "city": "Amiens",
+     "context": "80, Somme, Hauts-de-France",
+     "type": "street",
+     "importance": 0.71543,
+     "depcode": "80",
+     "street": "Rue de Madrid",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Madrid"
+ },
+ "Lyon": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.835,
+      45.758
+     ]
+    },
+    "properties": {
+     "label": "Lyon",
+     "score": 0.9639145454545454,
+     "id": "69123",
+     "type": "municipality",
+     "name": "Lyon",
+     "postcode": "69001",
+     "citycode": "69123",
+     "x": 842627.75,
+     "y": 6519256.98,
+     "population": 519127,
+     "city": "Lyon",
+     "context": "69, Rhône, Auvergne-Rhône-Alpes",
+     "importance": 0.60306,
+     "depcode": "69",
+     "municipality": "Lyon",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -2.531651,
+      47.544045
+     ]
+    },
+    "properties": {
+     "label": "Lyonne 56190 Ambon",
+     "score": 0.8561127272727272,
+     "id": "56002_vj624p",
+     "banId": "35e94c90-2a32-4303-9c77-95ec946f86bf",
+     "name": "Lyonne",
+     "postcode": "56190",
+     "citycode": "56002",
+     "x": 284243.06,
+     "y": 6730532.45,
+     "city": "Ambon",
+     "context": "56, Morbihan, Bretagne",
+     "type": "street",
+     "importance": 0.41724,
+     "depcode": "56",
+     "street": "Lyonne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.538348,
+      43.403844
+     ]
+    },
+    "properties": {
+     "label": "Lyons 31560 Saint-Léon",
+     "score": 0.8488172727272727,
+     "type": "locality",
+     "importance": 0.33699,
+     "id": "31495_6af5d8",
+     "banId": "cb502556-6891-461f-b9a9-aa09b96a7348",
+     "name": "Lyons",
+     "postcode": "31560",
+     "citycode": "31495",
+     "x": 581546.84,
+     "y": 6257176.82,
+     "city": "Saint-Léon",
+     "context": "31, Haute-Garonne, Occitanie",
+     "depcode": "31",
+     "locality": "Lyons",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.538417,
+      43.403858
+     ]
+    },
+    "properties": {
+     "label": "Lyons 31560 Saint-Léon",
+     "score": 0.8488172727272727,
+     "id": "31495_y1rdbu",
+     "banId": "6b9c234b-7571-4dfb-86cd-2cb3bca13b5b",
+     "name": "Lyons",
+     "postcode": "31560",
+     "citycode": "31495",
+     "x": 581552.46,
+     "y": 6257178.27,
+     "city": "Saint-Léon",
+     "context": "31, Haute-Garonne, Occitanie",
+     "type": "street",
+     "importance": 0.33699,
+     "depcode": "31",
+     "street": "Lyons",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.060135,
+      50.618635
+     ]
+    },
+    "properties": {
+     "label": "Rue de Lyon 59000 Lille",
+     "score": 0.7077872727272726,
+     "id": "59350_5753",
+     "banId": "583e6c98-313a-4f05-a502-b40ba34ec77f",
+     "name": "Rue de Lyon",
+     "postcode": "59000",
+     "citycode": "59350",
+     "oldcitycode": "59350",
+     "x": 704262.97,
+     "y": 7057959.5,
+     "city": "Lille",
+     "oldcity": "Lille",
+     "context": "59, Nord, Hauts-de-France",
+     "type": "street",
+     "importance": 0.78566,
+     "depcode": "59",
+     "street": "Rue de Lyon",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Lyon"
+ },
+ "Tours": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.695848,
+      47.395476
+     ]
+    },
+    "properties": {
+     "label": "Tours",
+     "score": 0.9579345454545454,
+     "id": "37261",
+     "banId": "d714d115-1030-4372-b3e0-8d8993394d8d",
+     "type": "municipality",
+     "name": "Tours",
+     "postcode": "37000",
+     "citycode": "37261",
+     "x": 526222.07,
+     "y": 6701994.86,
+     "population": 139259,
+     "city": "Tours",
+     "context": "37, Indre-et-Loire, Centre-Val de Loire",
+     "importance": 0.53728,
+     "depcode": "37",
+     "municipality": "Tours",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.357611,
+      45.619698
+     ]
+    },
+    "properties": {
+     "label": "Tours 87380 Château-Chervix",
+     "score": 0.9393836363636363,
+     "id": "87039_zkcxrv",
+     "banId": "76846767-0e4f-4143-978b-89017649b235",
+     "name": "Tours",
+     "postcode": "87380",
+     "citycode": "87039",
+     "x": 572021.47,
+     "y": 6503572.02,
+     "city": "Château-Chervix",
+     "context": "87, Haute-Vienne, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.33322,
+     "depcode": "87",
+     "street": "Tours",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.902504,
+      45.945424
+     ]
+    },
+    "properties": {
+     "label": "Tour 42430 Cherier",
+     "score": 0.6491172727272727,
+     "id": "42061_2tyb0d",
+     "banId": "cecbacac-78d7-4ffd-9fdb-c19ce2785ade",
+     "name": "Tour",
+     "postcode": "42430",
+     "citycode": "42061",
+     "x": 769915.19,
+     "y": 6538812.73,
+     "city": "Cherier",
+     "context": "42, Loire, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.39029,
+     "depcode": "42",
+     "street": "Tour",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.750904,
+      46.577931
+     ]
+    },
+    "properties": {
+     "label": "Tour 39130 Clairvaux-les-Lacs",
+     "score": 0.6448145454545454,
+     "type": "locality",
+     "importance": 0.34296,
+     "id": "39154_z7n3zr",
+     "banId": "6408dcca-473e-4716-a04b-4eed24e96f52",
+     "name": "Tour",
+     "postcode": "39130",
+     "citycode": "39154",
+     "x": 910622.02,
+     "y": 6612323.94,
+     "city": "Clairvaux-les-Lacs",
+     "context": "39, Jura, Bourgogne-Franche-Comté",
+     "depcode": "39",
+     "locality": "Tour",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.523873,
+      44.052357
+     ]
+    },
+    "properties": {
+     "label": "Tourré 32480 Pouy-Roquelaure",
+     "score": 0.4288945454545455,
+     "type": "locality",
+     "importance": 0.21784,
+     "id": "32328_732yfu",
+     "name": "Tourré",
+     "postcode": "32480",
+     "citycode": "32328",
+     "x": 501614.22,
+     "y": 6331261.33,
+     "city": "Pouy-Roquelaure",
+     "context": "32, Gers, Occitanie",
+     "depcode": "32",
+     "locality": "Tourré",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Tours"
+ },
+ "Nice": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      7.255313,
+      43.71273
+     ]
+    },
+    "properties": {
+     "label": "Nice",
+     "score": 0.9622227272727273,
+     "id": "06088",
+     "banId": "414b92ac-8bfc-4f32-b67b-c621c45ab545",
+     "type": "municipality",
+     "name": "Nice",
+     "postcode": "06000",
+     "citycode": "06088",
+     "x": 1042856.73,
+     "y": 6299651.74,
+     "population": 357737,
+     "city": "Nice",
+     "context": "06, Alpes-Maritimes, Provence-Alpes-Côte d'Azur",
+     "importance": 0.58445,
+     "depcode": "06",
+     "municipality": "Nice",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.464981,
+      43.576243
+     ]
+    },
+    "properties": {
+     "label": "Rue de Nice 31400 Toulouse",
+     "score": 0.705401818181818,
+     "id": "31555_6261",
+     "banId": "6b18062d-4027-46fa-ae60-6066c5ed9e2e",
+     "name": "Rue de Nice",
+     "postcode": "31400",
+     "citycode": "31555",
+     "x": 575974.35,
+     "y": 6276447.99,
+     "city": "Toulouse",
+     "context": "31, Haute-Garonne, Occitanie",
+     "type": "street",
+     "importance": 0.75942,
+     "depcode": "31",
+     "street": "Rue de Nice",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      7.124049,
+      43.606716
+     ]
+    },
+    "properties": {
+     "label": "Route de Nice 06600 Antibes",
+     "score": 0.7043127272727272,
+     "id": "06004_2240",
+     "banId": "f0f60920-d753-4e93-82bc-a02f28427eca",
+     "name": "Route de Nice",
+     "postcode": "06600",
+     "citycode": "06004",
+     "x": 1032905.44,
+     "y": 6287324.69,
+     "city": "Antibes",
+     "context": "06, Alpes-Maritimes, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.74744,
+     "depcode": "06",
+     "street": "Route de Nice",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      55.449494,
+      -20.873546
+     ]
+    },
+    "properties": {
+     "label": "Rue de Nice 97400 Saint-Denis",
+     "score": 0.7039272727272726,
+     "id": "97411_1010",
+     "name": "Rue de Nice",
+     "postcode": "97400",
+     "citycode": "97411",
+     "x": 338707.63,
+     "y": 7691069.53,
+     "city": "Saint-Denis",
+     "context": "974, La Réunion",
+     "type": "street",
+     "importance": 0.7432,
+     "depcode": "97",
+     "street": "Rue de Nice",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      7.12045,
+      43.595198
+     ]
+    },
+    "properties": {
+     "label": "Avenue de Nice 06600 Antibes",
+     "score": 0.7034836363636363,
+     "id": "06004_2230",
+     "banId": "fe9139e0-035d-46ba-972f-627083164fa3",
+     "name": "Avenue de Nice",
+     "postcode": "06600",
+     "citycode": "06004",
+     "x": 1032681.95,
+     "y": 6286031.15,
+     "city": "Antibes",
+     "context": "06, Alpes-Maritimes, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.73832,
+     "depcode": "06",
+     "street": "Avenue de Nice",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Nice"
+ },
+ "Orange": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.813318,
+      44.129795
+     ]
+    },
+    "properties": {
+     "label": "Orange",
+     "score": 0.9509118181818181,
+     "id": "84087",
+     "banId": "c661a1bb-6d79-420b-ae7e-e8daf5c64afd",
+     "type": "municipality",
+     "name": "Orange",
+     "postcode": "84100",
+     "citycode": "84087",
+     "x": 845095.41,
+     "y": 6338420.51,
+     "population": 29706,
+     "city": "Orange",
+     "context": "84, Vaucluse, Provence-Alpes-Côte d'Azur",
+     "importance": 0.46003,
+     "depcode": "84",
+     "municipality": "Orange",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.484042,
+      48.336408
+     ]
+    },
+    "properties": {
+     "label": "Orange 35490 Vieux-Vy-sur-Couesnon",
+     "score": 0.9439654545454544,
+     "id": "35355_fab06q",
+     "banId": "b877e928-d575-4e71-a57b-d8ffbc08ed8b",
+     "name": "Orange",
+     "postcode": "35490",
+     "citycode": "35355",
+     "x": 367883.63,
+     "y": 6813442.74,
+     "city": "Vieux-Vy-sur-Couesnon",
+     "context": "35, Ille-et-Vilaine, Bretagne",
+     "type": "street",
+     "importance": 0.38362,
+     "depcode": "35",
+     "street": "Orange",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.810058,
+      44.13734
+     ]
+    },
+    "properties": {
+     "label": "Boulevard Édouard Daladier 84100 Orange",
+     "score": 0.7003445454545453,
+     "id": "84087_0835",
+     "banId": "e5251efe-84b5-411a-91df-63285104922a",
+     "name": "Boulevard Édouard Daladier",
+     "postcode": "84100",
+     "citycode": "84087",
+     "x": 844815.38,
+     "y": 6339252.58,
+     "city": "Orange",
+     "context": "84, Vaucluse, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.70379,
+     "depcode": "84",
+     "street": "Boulevard Édouard Daladier",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.814876,
+      44.128999
+     ]
+    },
+    "properties": {
+     "label": "Rue de Châteauneuf 84100 Orange",
+     "score": 0.6993390909090909,
+     "id": "84087_0590",
+     "banId": "d6f11a7c-3dff-4004-b8f7-b0b6e82efa90",
+     "name": "Rue de Châteauneuf",
+     "postcode": "84100",
+     "citycode": "84087",
+     "x": 845222.08,
+     "y": 6338334.96,
+     "city": "Orange",
+     "context": "84, Vaucluse, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.69273,
+     "depcode": "84",
+     "street": "Rue de Châteauneuf",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.457118,
+      43.518561
+     ]
+    },
+    "properties": {
+     "label": "Traverse d'Orange 13100 Aix-en-Provence",
+     "score": 0.699151818181818,
+     "id": "13001_9x64h6",
+     "banId": "5abf5b70-6b4c-449f-8ac0-af165bf7c9ee",
+     "name": "Traverse d'Orange",
+     "postcode": "13100",
+     "citycode": "13001",
+     "x": 898708.85,
+     "y": 6271923.31,
+     "city": "Aix-en-Provence",
+     "context": "13, Bouches-du-Rhône, Provence-Alpes-Côte d'Azur",
+     "type": "street",
+     "importance": 0.69067,
+     "depcode": "13",
+     "street": "Traverse d'Orange",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Orange"
+ },
+ "Paris": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.347,
+      48.859
+     ]
+    },
+    "properties": {
+     "label": "Paris",
+     "score": 0.9702754545454544,
+     "id": "75056",
+     "type": "municipality",
+     "name": "Paris",
+     "postcode": "75001",
+     "citycode": "75056",
+     "x": 652089.7,
+     "y": 6862305.26,
+     "population": 2103778,
+     "city": "Paris",
+     "context": "75, Paris, Île-de-France",
+     "importance": 0.67303,
+     "depcode": "75",
+     "municipality": "Paris",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.419005,
+      44.759191
+     ]
+    },
+    "properties": {
+     "label": "Paris 33880 Saint-Caprais-de-Bordeaux",
+     "score": 0.950580909090909,
+     "id": "33381_sy62ut",
+     "banId": "d1d6e602-baeb-4977-84be-e9369d989d85",
+     "name": "Paris",
+     "postcode": "33880",
+     "citycode": "33381",
+     "x": 429510.99,
+     "y": 6412529.47,
+     "city": "Saint-Caprais-de-Bordeaux",
+     "context": "33, Gironde, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.45639,
+     "depcode": "33",
+     "street": "Paris",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      6.312845,
+      43.321735
+     ]
+    },
+    "properties": {
+     "label": "Paris 83590 Gonfaron",
+     "score": 0.9454827272727271,
+     "type": "locality",
+     "importance": 0.40031,
+     "id": "83067_gxv57z",
+     "banId": "495bbb3b-59e5-4181-bc0d-b27d5d9a77b0",
+     "name": "Paris",
+     "postcode": "83590",
+     "citycode": "83067",
+     "x": 968794.35,
+     "y": 6252592.7,
+     "city": "Gonfaron",
+     "context": "83, Var, Provence-Alpes-Côte d'Azur",
+     "depcode": "83",
+     "locality": "Paris",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -1.055026,
+      48.943536
+     ]
+    },
+    "properties": {
+     "label": "Paris 50420 Tessy-Bocage",
+     "score": 0.9441145454545454,
+     "id": "50592_6lgemp",
+     "banId": "cd61f1d8-cbd4-484f-af8b-065e5f4c706b",
+     "name": "Paris",
+     "postcode": "50420",
+     "citycode": "50592",
+     "oldcitycode": "50649",
+     "x": 403094.56,
+     "y": 6879132.81,
+     "city": "Tessy-Bocage",
+     "oldcity": "Pont-Farcy",
+     "context": "50, Manche, Normandie",
+     "type": "street",
+     "importance": 0.38526,
+     "depcode": "50",
+     "street": "Paris",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.549211,
+      43.419952
+     ]
+    },
+    "properties": {
+     "label": "Paris 31560 Saint-Léon",
+     "score": 0.9415690909090908,
+     "id": "31495_f795ad",
+     "banId": "f67f525d-d964-4698-89f5-02c1ec58d1da",
+     "name": "Paris",
+     "postcode": "31560",
+     "citycode": "31495",
+     "x": 582459.98,
+     "y": 6258950.77,
+     "city": "Saint-Léon",
+     "context": "31, Haute-Garonne, Occitanie",
+     "type": "street",
+     "importance": 0.35726,
+     "depcode": "31",
+     "street": "Paris",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Paris"
+ },
+ "rue de la république lyon": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.835391,
+      45.761307
+     ]
+    },
+    "properties": {
+     "label": "Rue de la République 69002 Lyon",
+     "score": 0.969250909090909,
+     "id": "69382_6005",
+     "banId": "c4e89c0c-da55-45f7-83f9-965fa08ada64",
+     "name": "Rue de la République",
+     "postcode": "69002",
+     "citycode": "69382",
+     "x": 842649.6,
+     "y": 6519624.83,
+     "city": "Lyon",
+     "district": "Lyon 2e Arrondissement",
+     "context": "69, Rhône, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.66176,
+     "depcode": "69",
+     "street": "Rue de la République",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.836016,
+      45.76637
+     ]
+    },
+    "properties": {
+     "label": "Rue de la République 69001 Lyon",
+     "score": 0.9627536363636363,
+     "id": "69381_6005",
+     "banId": "63f0fd07-275b-4479-b71b-0233f8340de8",
+     "name": "Rue de la République",
+     "postcode": "69001",
+     "citycode": "69381",
+     "x": 842685.09,
+     "y": 6520188.06,
+     "city": "Lyon",
+     "district": "Lyon 1er Arrondissement",
+     "context": "69, Rhône, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.59029,
+     "depcode": "69",
+     "street": "Rue de la République",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.475121,
+      49.399612
+     ]
+    },
+    "properties": {
+     "label": "Rue de la Republique 27480 Lyons-la-Forêt",
+     "score": 0.8464845454545453,
+     "id": "27377_0085",
+     "banId": "e036ff43-8a03-4ab9-bfb1-81b5c52861aa",
+     "name": "Rue de la Republique",
+     "postcode": "27480",
+     "citycode": "27377",
+     "x": 589287.13,
+     "y": 6923305.27,
+     "city": "Lyons-la-Forêt",
+     "context": "27, Eure, Normandie",
+     "type": "street",
+     "importance": 0.31133,
+     "depcode": "27",
+     "street": "Rue de la Republique",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.835689,
+      45.760722
+     ]
+    },
+    "properties": {
+     "label": "Place de la République 69002 Lyon",
+     "score": 0.6941716883116883,
+     "id": "69382_6000",
+     "banId": "a24cdf41-ffcd-4788-9e4d-e5f6b570f791",
+     "name": "Place de la République",
+     "postcode": "69002",
+     "citycode": "69382",
+     "x": 842674.27,
+     "y": 6519560.42,
+     "city": "Lyon",
+     "district": "Lyon 2e Arrondissement",
+     "context": "69, Rhône, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.56446,
+     "depcode": "69",
+     "street": "Place de la République",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.392493,
+      45.639743
+     ]
+    },
+    "properties": {
+     "label": "Boulevard de la République 42140 Chazelles-sur-Lyon",
+     "score": 0.444503305785124,
+     "id": "42059_1110",
+     "banId": "4c007c90-6b53-4ffd-80d7-b7f6b1e2ed8c",
+     "name": "Boulevard de la République",
+     "postcode": "42140",
+     "citycode": "42059",
+     "x": 808469.03,
+     "y": 6505423.5,
+     "city": "Chazelles-sur-Lyon",
+     "context": "42, Loire, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.5259,
+     "depcode": "42",
+     "street": "Boulevard de la République",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "rue de la république lyon"
+ },
+ "Aéroport de Perpignan": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.907466,
+      42.738164
+     ]
+    },
+    "properties": {
+     "label": "Route de Perpignan 66380 Pia",
+     "score": 0.5005381818181818,
+     "id": "66141_0253",
+     "banId": "6ad2af39-b344-4f8c-80d6-bbc2431a58cf",
+     "name": "Route de Perpignan",
+     "postcode": "66380",
+     "citycode": "66141",
+     "x": 692413.83,
+     "y": 6182070.71,
+     "city": "Pia",
+     "context": "66, Pyrénées-Orientales, Occitanie",
+     "type": "street",
+     "importance": 0.63092,
+     "depcode": "66",
+     "street": "Route de Perpignan",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.859035,
+      42.709736
+     ]
+    },
+    "properties": {
+     "label": "Route de Perpignan 66240 Saint-Estève",
+     "score": 0.49794181818181815,
+     "id": "66172_0485",
+     "banId": "0af3ed11-c90d-44f2-a7d6-74a1d8516288",
+     "name": "Route de Perpignan",
+     "postcode": "66240",
+     "citycode": "66172",
+     "x": 688437.69,
+     "y": 6178914.83,
+     "city": "Saint-Estève",
+     "context": "66, Pyrénées-Orientales, Occitanie",
+     "type": "street",
+     "importance": 0.60236,
+     "depcode": "66",
+     "street": "Route de Perpignan",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.441072,
+      48.814846
+     ]
+    },
+    "properties": {
+     "label": "Rue de Perpignan 94700 Maisons-Alfort",
+     "score": 0.4903301976284584,
+     "id": "94046_7150",
+     "banId": "f68e23a1-70f7-485f-85c2-b93ee80b4528",
+     "name": "Rue de Perpignan",
+     "postcode": "94700",
+     "citycode": "94046",
+     "x": 658956.84,
+     "y": 6857342.8,
+     "city": "Maisons-Alfort",
+     "context": "94, Val-de-Marne, Île-de-France",
+     "type": "street",
+     "importance": 0.69798,
+     "depcode": "94",
+     "street": "Rue de Perpignan",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      0.233822,
+      47.973845
+     ]
+    },
+    "properties": {
+     "label": "Rue de Perpignan 72100 Le Mans",
+     "score": 0.4888211067193675,
+     "id": "72181_4117",
+     "banId": "23371387-4b22-4300-8dbc-2bbfd91afc78",
+     "name": "Rue de Perpignan",
+     "postcode": "72100",
+     "citycode": "72181",
+     "x": 493639.98,
+     "y": 6767332.24,
+     "city": "Le Mans",
+     "context": "72, Sarthe, Pays de la Loire",
+     "type": "street",
+     "importance": 0.68138,
+     "depcode": "72",
+     "street": "Rue de Perpignan",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      2.584473,
+      48.939707
+     ]
+    },
+    "properties": {
+     "label": "Rue de Perpignan 93290 Tremblay-en-France",
+     "score": 0.4875492885375494,
+     "id": "93073_1070",
+     "banId": "c624b73b-66a7-4444-901a-c3a18afe1de1",
+     "name": "Rue de Perpignan",
+     "postcode": "93290",
+     "citycode": "93073",
+     "x": 669560,
+     "y": 6871161.81,
+     "city": "Tremblay-en-France",
+     "context": "93, Seine-Saint-Denis, Île-de-France",
+     "type": "street",
+     "importance": 0.66739,
+     "depcode": "93",
+     "street": "Rue de Perpignan",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Aéroport de Perpignan"
+ },
+ "St Etienne": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.802305,
+      43.192459
+     ]
+    },
+    "properties": {
+     "label": "St Etienne 83330 Le Beausset",
+     "score": 0.9492127272727273,
+     "type": "locality",
+     "importance": 0.44134,
+     "id": "83016_B086",
+     "banId": "8dc3d0a8-4dd3-42bc-a463-caa4e66ceb1a",
+     "name": "St Etienne",
+     "postcode": "83330",
+     "citycode": "83016",
+     "x": 927899.56,
+     "y": 6236626.27,
+     "city": "Le Beausset",
+     "context": "83, Var, Provence-Alpes-Côte d'Azur",
+     "depcode": "83",
+     "locality": "St Etienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.812606,
+      48.405621
+     ]
+    },
+    "properties": {
+     "label": "St Etienne 53120 Gorron",
+     "score": 0.9427072727272726,
+     "type": "locality",
+     "importance": 0.36978,
+     "id": "53107_B714",
+     "banId": "d301f4cb-8cd3-4e09-af17-9a7740925afb",
+     "name": "St Etienne",
+     "postcode": "53120",
+     "citycode": "53107",
+     "x": 417943.65,
+     "y": 6818514.01,
+     "city": "Gorron",
+     "context": "53, Mayenne, Pays de la Loire",
+     "depcode": "53",
+     "locality": "St Etienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.663547,
+      45.273854
+     ]
+    },
+    "properties": {
+     "label": "St Etienne 07100 Boulieu-lès-Annonay",
+     "score": 0.9423345454545453,
+     "id": "07041_B055",
+     "banId": "e7cc33ab-96f1-447d-88f3-b32b6b7758e4",
+     "name": "St Etienne",
+     "postcode": "07100",
+     "citycode": "07041",
+     "x": 830436.05,
+     "y": 6465207.53,
+     "city": "Boulieu-lès-Annonay",
+     "context": "07, Ardèche, Auvergne-Rhône-Alpes",
+     "type": "street",
+     "importance": 0.36568,
+     "depcode": "07",
+     "street": "St Etienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      -0.542311,
+      44.6387
+     ]
+    },
+    "properties": {
+     "label": "Etienne 33650 Saint-Morillon",
+     "score": 0.5777745454545454,
+     "id": "33454_zh18tl",
+     "banId": "ec8a40ab-2828-45a4-94b6-895968aec12c",
+     "name": "Etienne",
+     "postcode": "33650",
+     "citycode": "33454",
+     "x": 419162.07,
+     "y": 6399589.31,
+     "city": "Saint-Morillon",
+     "context": "33, Gironde, Nouvelle-Aquitaine",
+     "type": "street",
+     "importance": 0.35552,
+     "depcode": "33",
+     "street": "Etienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.370045,
+      45.430195
+     ]
+    },
+    "properties": {
+     "label": "Saint-Étienne",
+     "score": 0.5533292307692307,
+     "id": "42218",
+     "type": "municipality",
+     "name": "Saint-Étienne",
+     "postcode": "42000",
+     "citycode": "42218",
+     "x": 807124.35,
+     "y": 6482125.47,
+     "population": 173136,
+     "city": "Saint-Étienne",
+     "context": "42, Loire, Auvergne-Rhône-Alpes",
+     "importance": 0.54816,
+     "depcode": "42",
+     "municipality": "Saint-Étienne",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "St Etienne"
+ },
+ "St Etienne|municipality": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.370045,
+      45.430195
+     ]
+    },
+    "properties": {
+     "label": "Saint-Étienne",
+     "score": 0.5533292307692307,
+     "id": "42218",
+     "type": "municipality",
+     "name": "Saint-Étienne",
+     "postcode": "42000",
+     "citycode": "42218",
+     "x": 807124.35,
+     "y": 6482125.47,
+     "population": 173136,
+     "city": "Saint-Étienne",
+     "context": "42, Loire, Auvergne-Rhône-Alpes",
+     "importance": 0.54816,
+     "depcode": "42",
+     "municipality": "Saint-Étienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.978121,
+      48.731892
+     ]
+    },
+    "properties": {
+     "label": "Villey-Saint-Étienne",
+     "score": 0.35379909090909095,
+     "id": "54584",
+     "banId": "b86ac893-e6b8-4424-a00c-b36478dcd33a",
+     "type": "municipality",
+     "name": "Villey-Saint-Étienne",
+     "postcode": "54200",
+     "citycode": "54584",
+     "x": 918986.93,
+     "y": 6852104.26,
+     "population": 1024,
+     "city": "Villey-Saint-Étienne",
+     "context": "54, Meurthe-et-Moselle, Grand Est",
+     "importance": 0.29179,
+     "depcode": "54",
+     "municipality": "Villey-Saint-Étienne",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      1.609355,
+      50.669813
+     ]
+    },
+    "properties": {
+     "label": "Saint-Étienne-au-Mont",
+     "score": 0.3454383116883117,
+     "id": "62746",
+     "banId": "2a6ba99b-0078-44db-85c2-a225a76a822f",
+     "type": "municipality",
+     "name": "Saint-Étienne-au-Mont",
+     "postcode": "62360",
+     "citycode": "62746",
+     "x": 601522.62,
+     "y": 7064527.9,
+     "population": 5029,
+     "city": "Saint-Étienne-au-Mont",
+     "context": "62, Pas-de-Calais, Hauts-de-France",
+     "importance": 0.37125,
+     "depcode": "62",
+     "municipality": "Saint-Étienne-au-Mont",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      5.284214,
+      46.275637
+     ]
+    },
+    "properties": {
+     "label": "Saint-Étienne-du-Bois",
+     "score": 0.3424137662337662,
+     "id": "01350",
+     "banId": "c2376adb-f9e0-43ba-9efd-a238fa68a214",
+     "type": "municipality",
+     "name": "Saint-Étienne-du-Bois",
+     "postcode": "01370",
+     "citycode": "01350",
+     "x": 875872.05,
+     "y": 6577627.62,
+     "population": 2584,
+     "city": "Saint-Étienne-du-Bois",
+     "context": "01, Ain, Auvergne-Rhône-Alpes",
+     "importance": 0.33798,
+     "depcode": "01",
+     "municipality": "Saint-Étienne-du-Bois",
+     "_type": "address"
+    }
+   },
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      4.73256,
+      43.794361
+     ]
+    },
+    "properties": {
+     "label": "Saint-Étienne-du-Grès",
+     "score": 0.34224376623376623,
+     "id": "13094",
+     "banId": "f7363ff6-7063-40dd-95d3-4bc0505d6f29",
+     "type": "municipality",
+     "name": "Saint-Étienne-du-Grès",
+     "postcode": "13103",
+     "citycode": "13094",
+     "x": 839452.23,
+     "y": 6301012.7,
+     "population": 2489,
+     "city": "Saint-Étienne-du-Grès",
+     "context": "13, Bouches-du-Rhône, Provence-Alpes-Côte d'Azur",
+     "importance": 0.33611,
+     "depcode": "13",
+     "municipality": "Saint-Étienne-du-Grès",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "St Etienne"
+ },
+ "Madrid|municipality": {
+  "type": "FeatureCollection",
+  "features": [
+   {
+    "type": "Feature",
+    "geometry": {
+     "type": "Point",
+     "coordinates": [
+      3.185509,
+      45.43256
+     ]
+    },
+    "properties": {
+     "label": "Madriat",
+     "score": 0.48496792207792205,
+     "id": "63202",
+     "banId": "8dab2aa2-4321-45df-9fc5-fa699201dffe",
+     "type": "municipality",
+     "name": "Madriat",
+     "postcode": "63340",
+     "citycode": "63202",
+     "x": 714505.12,
+     "y": 6481475.79,
+     "population": 136,
+     "city": "Madriat",
+     "context": "63, Puy-de-Dôme, Auvergne-Rhône-Alpes",
+     "importance": 0.19179,
+     "depcode": "63",
+     "municipality": "Madriat",
+     "_type": "address"
+    }
+   }
+  ],
+  "query": "Madrid"
+ }
+}

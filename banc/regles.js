@@ -25,6 +25,7 @@ function retenues(plan){
 }
 const faisables = plan => (plan.largeurs || []).filter(o => o.faisable);
 const messageDetourNecessaire = plan => (plan.messages || []).some(m => /détour/i.test(m) && /nécessaire/i.test(m));
+const messagePlusRapide = plan => (plan.messages || []).some(m => /le plus rapide et le moins cher passe à/i.test(m));
 
 const REGLES = [
   {
@@ -69,9 +70,14 @@ const REGLES = [
       if(!f.length) return [];                         // infaisable a toute largeur : autre message
       const wmin = Math.min(...f.map(o => o.w)), present = messageDetourNecessaire(plan);
       if(present && wmin <= SANS_DETOUR_KM) return [`message « détour nécessaire » affiché alors qu'un plan passe à ${wmin} km de la route (messages : ${JSON.stringify(plan.messages)})`];
-      // Reciproque, telle que le code l'ecrit : un seul choix de detour affiche, au-dela du seuil -> le message est du.
-      if(!present && plan.etat !== 'infaisable' && (plan.detours || []).length === 1 && wmin > SANS_DETOUR_KM)
-        return [`détour minimal ${wmin} km > ${SANS_DETOUR_KM} km et un seul choix affiché : message « détour nécessaire » attendu (messages : ${JSON.stringify(plan.messages)})`];
+      // Reciproque, telle que le code l'ecrit : un seul choix de detour affiche, au-dela du seuil -> un message est du.
+      // Ce choix a la plus petite largeur faisable : « détour nécessaire ». Plus large (un choix plus etroit
+      // existe mais il est domine : app.js, etroitFaisable) : « Le plus rapide et le moins cher passe à X km ».
+      if(!present && plan.etat !== 'infaisable' && (plan.detours || []).length === 1 && wmin > SANS_DETOUR_KM){
+        const etroitDomine = plan.detours[0].w > wmin;
+        if(!(etroitDomine && messagePlusRapide(plan)))
+          return [`détour minimal ${wmin} km > ${SANS_DETOUR_KM} km et un seul choix affiché${etroitDomine ? ` à ${plan.detours[0].w} km` : ''} : message « ${etroitDomine ? 'Le plus rapide et le moins cher' : 'détour nécessaire'} » attendu (messages : ${JSON.stringify(plan.messages)})`];
+      }
       return [];
     },
   },

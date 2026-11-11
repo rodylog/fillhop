@@ -118,7 +118,7 @@
   .chip-txt{display:flex;flex-direction:column;min-width:0;line-height:1.2}
   #chipNom{font-weight:650;font-size:.84375rem;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
   .chip-carb{font-size:.71875rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  /* Crayon : dit que le nom se modifie (Eric, 24/10/2026) — meme signe devant le champ Nom du garage. */
+  /* Crayon : dit que le nom se modifie (demande du 24/10/2026) — meme signe devant le champ Nom du garage. */
   .chip-crayon{flex:none;color:var(--muted);margin-left:2px}
   .chip-crayon .ico{width:14px;height:14px}
   /* iOS zoome sur un champ sous 16 px au focus : au doigt, les champs passent a 16 px (revue 24/10/2026). */

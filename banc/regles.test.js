@@ -73,6 +73,18 @@ test('messageDetour : message affiché alors que 1 km suffit rougit ; message d�
   assert.deepEqual(regle('messageDetour').verifier({plan: p2, date: DATE}), []);
 });
 
+test('messageDetour : un choix plus étroit dominé -> « Le plus rapide et le moins cher passe à X km » suffit', () => {
+  const plan = planSain();   // largeurs faisables 5, 10, 20 ; le seul choix affiche est a 10 km (5 km domine)
+  plan.detours = [{w: 10, voyage: 24.075, minutes: 6.2, arrets: 1, conseille: true}];
+  plan.messages = ['Le plus rapide et le moins cher passe à 10 km de la route au plus ; aller plus loin ne ferait rien gagner.'];
+  assert.deepEqual(regle('messageDetour').verifier({plan, date: DATE}), []);
+  plan.messages = [];        // meme plan, rien d'affiche : le message reste du
+  assert.match(regle('messageDetour').verifier({plan, date: DATE})[0], /message « Le plus rapide et le moins cher » attendu/);
+  const p2 = planSain();     // seul choix a la plus petite largeur faisable : c'est « détour nécessaire » qui est du
+  p2.messages = ['Le plus rapide et le moins cher passe à 5 km de la route au plus ; aller plus loin ne ferait rien gagner.'];
+  assert.match(regle('messageDetour').verifier({plan: p2, date: DATE})[0], /message « détour nécessaire » attendu/);
+});
+
 test('coutTotal : voyage ≠ à bord + étapes rougit ; achats ≠ somme rougit', () => {
   const plan = planSain();
   plan.voyage += 1;

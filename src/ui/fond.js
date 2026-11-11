@@ -14,11 +14,23 @@ const TUILES_OSM   = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIB_IGN = '© IGN — Géoplateforme';
 const ATTRIB_OSM = '© les contributeurs OpenStreetMap';
 
+// WebGL disponible ? Un seul contexte d'essai par page : le resultat est memorise et le
+// contexte relache aussitot (WEBGL_lose_context), pour qu'il ne compte pas contre la limite
+// du navigateur ni ne pese sur le demarrage quand MapLibre cree le sien juste apres.
+let WEBGL_DISPO = null;
 function webglDispo(){
+  if(WEBGL_DISPO !== null) return WEBGL_DISPO;
+  let gl = null;
   try{
     const c = document.createElement('canvas');
-    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
-  }catch(e){ return false; }
+    gl = window.WebGLRenderingContext ? (c.getContext('webgl2') || c.getContext('webgl')) : null;
+  }catch(e){ gl = null; }
+  WEBGL_DISPO = !!gl;
+  try{
+    const perte = gl && gl.getExtension('WEBGL_lose_context');
+    if(perte) perte.loseContext();
+  }catch(e){ /* extension absente : le contexte partira avec son canvas */ }
+  return WEBGL_DISPO;
 }
 
 // ---- Couleurs : analyse hex / rgb() / hsl(), transformation « sombre » ----
